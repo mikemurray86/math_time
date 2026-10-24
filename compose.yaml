@@ -1,0 +1,12 @@
+# Local run: podman compose up --build   → http://localhost:8080
+services:
+  math-time:
+    build: .
+    image: localhost/math-time:dev
+    ports:
+      - "8080:8080"
+    environment:
+      PARENT_PIN: "1234"
+      SESSION_SECRET: "change-me-local-only-0123456789abcdef"
+    volumes:
+      - ./data:/data:Z
