@@ -259,6 +259,7 @@ body { overflow-x: hidden; }
 .item.too-pricey svg, .item.too-pricey .mode-icon { filter: grayscale(1) opacity(0.4); }
 .price { background: var(--ink); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 0.75rem; margin-top: 2px; }
 .price.can-buy { background: var(--sun); color: var(--ink); font-weight: 900; }
+.season-tag { position: absolute; top: 4px; right: 6px; font-size: 1rem; }
 .wearing { position: absolute; top: 6px; left: 6px; background: var(--purple); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 0.7rem; }
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(45, 34, 64, 0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 40; padding: 16px; }
 .sheet { width: 100%; max-width: 420px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; animation: sheet-up 0.25s ease-out; margin-bottom: env(safe-area-inset-bottom); }
@@ -338,10 +339,28 @@ details ol { padding-left: 1.3em; }
 .editor { display: flex; flex-direction: column; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field > label { font-weight: 800; }
+fieldset.field { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset.field > legend { font-weight: 800; padding: 0; margin-bottom: 6px; }
 .field input[type='range'] { accent-color: var(--purple); }
 .field p { margin: 0; }
 .param-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 12px; }
 .checks { display: flex; flex-direction: column; gap: 4px; }
+.template-form { display: flex; flex-direction: column; gap: 16px; }
+.template-form textarea, .var-row input, .var-row select, .template-form .field > select {
+  padding: 8px 10px; border-radius: 12px; border: 2px solid var(--line); background: #fff; min-height: 42px; font: inherit; color: inherit;
+}
+.template-form textarea { resize: vertical; }
+.template-form details .field { margin-top: 10px; }
+.var-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.var-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.var-row .var-name { width: 92px; font-weight: 800; }
+.var-opt { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--ink-soft); }
+.var-opt input { width: 84px; }
+.var-opt.wide { flex: 1; min-width: 180px; }
+.var-opt.wide input { flex: 1; width: auto; }
+.var-row .var-unit { width: 130px; }
+.formula-help { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.template-snippet { font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 520px; }
 .check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .preview-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .preview-head h3 { margin: 0; font-size: 1rem; }
@@ -475,6 +494,99 @@ body.crazy-shake .page { animation: crazy-shake 0.6s; }
   10%, 50%, 90% { transform: translate(-14px, 4px) rotate(-1.5deg); }
   30%, 70% { transform: translate(14px, -4px) rotate(1.5deg); }
 }
+/* ---- flood mode: the water rises a little with every miss and stays for the rest of the quiz ---- */
+.flood {
+  position: fixed; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 35;
+  background: linear-gradient(rgba(90, 176, 255, 0.35), rgba(30, 110, 200, 0.45));
+  transition: height 2.5s cubic-bezier(0.3, 0.6, 0.4, 1);
+}
+.flood::before {
+  content: ''; position: absolute; left: -60px; right: -60px; top: -11px; height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='12'%3E%3Cpath d='M0 12 V6 Q15 0 30 6 T60 6 V12 z' fill='rgba(90,176,255,.35)'/%3E%3C/svg%3E") repeat-x;
+  animation: flood-wave 3s linear infinite;
+}
+.flood.dry::before { display: none; }
+@keyframes flood-wave { to { transform: translateX(60px); } }
+.flood-fish { position: absolute; top: 30%; left: 0; font-size: 1.8rem; animation: flood-swim 14s linear infinite; }
+.flood-fish.two { top: 60%; animation-duration: 19s; animation-delay: -7s; }
+@keyframes flood-swim {
+  0% { transform: translateX(-10vw) scaleX(-1); } 49% { transform: translateX(105vw) scaleX(-1); }
+  50% { transform: translateX(105vw); } 100% { transform: translateX(-10vw); }
+}
+
+/* ---- retro mode ---- */
+.retro { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.retro-scan {
+  position: absolute; inset: 0; opacity: 0;
+  background: repeating-linear-gradient(rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 5px);
+  animation: retro-scan 1.4s steps(4) forwards;
+}
+@keyframes retro-scan { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+.retro-text {
+  position: absolute; left: 0; right: 0; top: 30vh; text-align: center;
+  font: 900 clamp(2rem, 9vw, 3.6rem) / 1 'Courier New', ui-monospace, monospace; letter-spacing: 0.06em;
+  color: #fbd000; text-shadow: 4px 4px 0 #e52521, 8px 8px 0 #1d1d2b;
+  animation: retro-pop 1.6s steps(6) forwards;
+}
+.retro-oops .retro-text { color: #fff; text-shadow: 4px 4px 0 #049cd8, 8px 8px 0 #1d1d2b; animation: retro-blink 1.6s steps(1) forwards; }
+@keyframes retro-pop {
+  0% { transform: translateY(20px) scale(0.6); opacity: 1; } 30% { transform: translateY(0) scale(1.1); }
+  80% { transform: translateY(-12px) scale(1); opacity: 1; } 100% { transform: translateY(-30px); opacity: 0; }
+}
+/* Blinks 3 times over 1.6s: under the 3-flashes-per-second limit. */
+@keyframes retro-blink { 0%, 25%, 50% { opacity: 1; } 12%, 37%, 62% { opacity: 0; } 75% { opacity: 1; } 100% { opacity: 0; } }
+.retro-hopper { position: absolute; left: calc(50% - 55px); bottom: -120px; }
+.retro-hopper .pip { animation: none; }
+.retro-win .retro-hopper { animation: retro-jump 1.6s steps(8) forwards; }
+.retro-oops .retro-hopper { animation: retro-fall 1.6s steps(8) forwards; }
+@keyframes retro-jump {
+  0% { transform: translateY(0); } 35% { transform: translateY(-58vh); } 55% { transform: translateY(-48vh); }
+  75% { transform: translateY(-52vh); } 100% { transform: translateY(0); }
+}
+@keyframes retro-fall {
+  0% { transform: translateY(0); } 30% { transform: translateY(-40vh); } 45% { transform: translateY(-40vh) rotate(180deg); }
+  100% { transform: translateY(0) rotate(180deg); }
+}
+
+/* ---- disco mode ---- */
+.disco { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+/* Colored spots that slowly turn with the ball (no flashing). */
+.disco-lights {
+  position: absolute; inset: -50%; opacity: 0;
+  background:
+    radial-gradient(circle at 35% 40%, rgba(255, 93, 143, 0.4) 0 4%, transparent 5%),
+    radial-gradient(circle at 60% 35%, rgba(46, 196, 182, 0.4) 0 3.5%, transparent 4.5%),
+    radial-gradient(circle at 45% 62%, rgba(255, 201, 60, 0.4) 0 4.5%, transparent 5.5%),
+    radial-gradient(circle at 66% 58%, rgba(108, 76, 241, 0.4) 0 4%, transparent 5%),
+    radial-gradient(circle at 52% 48%, rgba(255, 255, 255, 0.35) 0 2%, transparent 3%),
+    rgba(29, 17, 60, 0.3);
+  animation: disco-fade 3.2s ease-in-out forwards, disco-spin 3.2s linear forwards;
+}
+@keyframes disco-fade { 0% { opacity: 0; } 15%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes disco-spin { to { transform: rotate(80deg); } }
+.disco-ball { position: absolute; left: calc(50% - 40px); top: 0; transform: translateY(-100%); animation: disco-drop 3.2s ease-out forwards; }
+@keyframes disco-drop { 0% { transform: translateY(-100%); } 20%, 82% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
+.disco-twinkle { animation: disco-twinkle 0.8s ease-in-out infinite alternate; }
+@keyframes disco-twinkle { from { opacity: 0.2; } to { opacity: 1; } }
+.disco-dancers { position: absolute; left: 0; bottom: 14vh; display: flex; align-items: flex-end; gap: 6px; transform: translateX(-260px); }
+.disco-dancers .pip, .disco-dancers .snail { transform-origin: bottom center; }
+.disco-win .disco-dancers { animation: disco-across 3.2s linear forwards; }
+.disco-win .pip { animation: disco-hop 0.24s ease-in-out infinite alternate; }
+.disco-win .snail { animation: disco-wiggle 0.24s ease-in-out infinite alternate; }
+@keyframes disco-across { to { transform: translateX(100vw); } }
+@keyframes disco-hop { from { transform: translateY(0) rotate(-8deg); } to { transform: translateY(-22px) rotate(8deg); } }
+@keyframes disco-wiggle { from { transform: rotate(-10deg) scaleY(0.95); } to { transform: rotate(10deg) scaleY(1.05); } }
+/* A miss: the record scratches, the lights dim, the ball gets pulled back up and the snail turns around. */
+.disco-oops .disco-lights { background: rgba(29, 17, 60, 0.35); animation: disco-fade 2.4s ease-in-out forwards; }
+.disco-oops .disco-ball { animation: disco-sputter 2.4s ease-in-out forwards; }
+@keyframes disco-sputter { 0% { transform: translateY(-100%); } 25% { transform: translateY(-45%); } 45% { transform: translateY(-45%) rotate(6deg); } 100% { transform: translateY(-100%); } }
+.disco-oops .disco-dancers { animation: disco-shuffle 2.4s ease-in-out forwards; }
+@keyframes disco-shuffle { 0% { transform: translateX(-120px); } 40%, 62% { transform: translateX(16vw); } 100% { transform: translateX(-120px); } }
+.disco-oops .snail { animation: disco-turn 2.4s steps(1) forwards; }
+@keyframes disco-turn { 0% { transform: none; } 60% { transform: scaleX(-1); } }
+.disco-huh { font-size: 1.6rem; align-self: flex-start; opacity: 0; animation: disco-huh 2.4s forwards; }
+@keyframes disco-huh { 0%, 38% { opacity: 0; } 42%, 60% { opacity: 1; } 64%, 100% { opacity: 0; } }
+
 .mode-icon { font-size: 2.6rem; line-height: 64px; height: 64px; }
 .try-row { display: flex; gap: 10px; }
 .try-row .btn { flex: 1; }

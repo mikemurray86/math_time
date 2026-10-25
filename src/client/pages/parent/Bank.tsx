@@ -4,6 +4,7 @@ import type { ParamField, Params, Question } from '../../../shared/types.ts';
 import { MathText } from '../../components/MathText.tsx';
 import { QuestionInput, initialDraft } from '../../components/QuestionInput.tsx';
 import { useParent } from './ParentLayout.tsx';
+import { TemplateForm } from './TemplateForm.tsx';
 
 interface GenInfo {
   id: string;
@@ -89,6 +90,8 @@ function Editor({ kidId, kidName, draft, catalog, onCancel, onSaved }: { kidId: 
   const [samples, setSamples] = useState<Question[]>([]);
   const [error, setError] = useState('');
   const gen = catalog.find((g) => g.id === d.generator)!;
+  const custom = gen.id === 'custom';
+  const onPreset = gen.presets.some((p) => JSON.stringify(p.params) === JSON.stringify(d.params));
 
   const preview = async (next = d) => {
     try {
@@ -100,8 +103,9 @@ function Editor({ kidId, kidName, draft, catalog, onCancel, onSaved }: { kidId: 
     }
   };
   useEffect(() => {
-    void preview();
-    // regenerate samples whenever the settings change
+    // regenerate samples whenever the settings change; wait for a pause in typing on templates
+    const t = setTimeout(() => void preview(), custom ? 400 : 0);
+    return () => clearTimeout(t);
   }, [d.generator, JSON.stringify(d.params)]);
 
   const save = async () => {
@@ -131,24 +135,31 @@ function Editor({ kidId, kidName, draft, catalog, onCancel, onSaved }: { kidId: 
         <p className="muted">{gen.description}</p>
       </div>
       <div className="field">
-        <label>Start from a preset</label>
+        <label>{custom ? 'Start from an example' : 'Start from a preset'}</label>
         <div className="chips">
           {gen.presets.map((p) => (
             <button
               key={p.id}
               type="button"
               className={`chip ${JSON.stringify(p.params) === JSON.stringify(d.params) ? 'selected' : ''}`}
-              onClick={() => setD({ ...d, params: p.params, label: d.id ? d.label : p.label })}
+              onClick={() => {
+                if (custom && !onPreset && !confirm('Replace your question with this example?')) return;
+                setD({ ...d, params: p.params, label: d.id ? d.label : p.label });
+              }}
             >
               {p.label}
             </button>
           ))}
         </div>
       </div>
-      <details open={!gen.presets.some((p) => JSON.stringify(p.params) === JSON.stringify(d.params))}>
-        <summary>Fine-tune the difficulty</summary>
-        <ParamForm fields={gen.fields} params={d.params} onChange={(params) => setD({ ...d, params })} />
-      </details>
+      {custom ? (
+        <TemplateForm params={d.params} onChange={(params) => setD({ ...d, params })} />
+      ) : (
+        <details open={!onPreset}>
+          <summary>Fine-tune the difficulty</summary>
+          <ParamForm fields={gen.fields} params={d.params} onChange={(params) => setD({ ...d, params })} />
+        </details>
+      )}
       <div className="field">
         <label>Name</label>
         <input value={d.label} maxLength={120} onChange={(e) => setD({ ...d, label: e.target.value })} />
@@ -261,6 +272,7 @@ export function Bank() {
             <div className="bank-main">
               <strong>{e.label}</strong>
               <span className="muted">{nameOf(e.generator)?.skill} · {nameOf(e.generator)?.name}</span>
+              {e.generator === 'custom' && <span className="muted template-snippet">“{String(e.params.text)}”</span>}
               {e.note && <span className="note">📝 {e.note}</span>}
             </div>
             <div className="bank-controls">
@@ -272,6 +284,7 @@ export function Bank() {
                 {WEIGHTS.map((w, i) => <option key={w} value={i}>{w}</option>)}
               </select>
               <button type="button" className="btn small" onClick={() => setEditing(e)}>Edit</button>
+              <button type="button" className="btn small" onClick={() => setEditing({ ...e, id: undefined, label: `${e.label} (copy)` })}>Duplicate</button>
               {siblings.length > 0 && (
                 <select
                   value=""

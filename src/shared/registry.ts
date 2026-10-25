@@ -9,17 +9,19 @@ import { divideWhole, multiplyWhole, placeValue } from './generators/wholeNumber
 import { decimalFractions, fractionOps } from './generators/fractions4.ts';
 import { areaPerimeter } from './generators/geometry4.ts';
 import { factorsMultiples } from './generators/factors.ts';
+import { custom } from './generators/custom.ts';
 
 // To add a new kind of problem: write a generator in ./generators and list it here.
 export const GENERATORS: Record<string, GeneratorDef<any>> = Object.fromEntries(
   [
     orderNumbers, compareNumbers, plotPoint, readPoint, distanceSameLine, absoluteValue,
-    multiplyWhole, divideWhole, placeValue, fractionOps, decimalFractions, areaPerimeter, factorsMultiples,
+    multiplyWhole, divideWhole, placeValue, fractionOps, decimalFractions, areaPerimeter, factorsMultiples, custom,
   ].map((g) => [g.id, g]),
 );
 
 /** Fill in defaults and clamp anything out of range (params come from the parent UI). */
 export function sanitizeParams(gen: GeneratorDef<any>, raw: unknown): Params {
+  if (gen.sanitize) return gen.sanitize(raw);
   const src = (raw && typeof raw === 'object' ? raw : {}) as Params;
   const out: Params = {};
   for (const f of gen.fields) {
@@ -45,6 +47,13 @@ export function sanitizeParams(gen: GeneratorDef<any>, raw: unknown): Params {
     }
   }
   return out;
+}
+
+/** Sanitize, then run the generator's slower checks: for params a parent is previewing or saving. */
+export function checkParams(gen: GeneratorDef<any>, raw: unknown): Params {
+  const params = sanitizeParams(gen, raw);
+  gen.validate?.(params);
+  return params;
 }
 
 export function buildQuestion(generatorId: string, params: unknown, seed: number): Question {

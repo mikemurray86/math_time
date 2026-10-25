@@ -15,6 +15,10 @@ Problem types, grouped into grade-level sets (`GRADE_SETS` in `src/server/seed.t
 - **4th grade:** multi-digit multiplication, long division with remainders, place value and rounding, equivalent fractions, adding and subtracting with like denominators, whole number × fraction, decimals ↔ fractions, comparing positive fractions and decimals, rectangle area and perimeter, and factors, multiples and primes.
 - **6th grade:** ordering and comparing numbers (negatives, fractions, decimals, `|x|`), plotting and reading coordinates (whole, ½, ¼, ⅓ or 0.1 steps), distance on a grid, and absolute-value expressions.
 
+### Your own questions (no code)
+
+In the Bank editor, the **Your own question** problem type lets a parent type a question, for example one from a recent test. The parent writes `{placeholders}` for the numbers, and each placeholder gets a range: whole, decimal or fraction. A placeholder can also be worked out from the others, or picked from a list of words such as names. The editor also has optional rules (`b < a`, `whole(a / b)`), one to four answer formulas, and a hint and worked steps. Formulas use exact fractions (`src/shared/formula.ts`, never `eval`). The whole template is saved in the bank entry's params, so editing it later never changes past quiz reviews. Saving is blocked, with a plain-language message, if the template can't produce good questions (`src/shared/generators/custom.ts`).
+
 ### Adding a problem type
 
 1. Add `src/shared/generators/myThing.ts` exporting a `GeneratorDef`, with `fields` for the parent editor and a few `presets`.

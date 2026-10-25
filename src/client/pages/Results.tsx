@@ -7,20 +7,20 @@ import { BADGES } from '../../shared/rewards.ts';
 import { MascotSays } from '../components/Mascot.tsx';
 import { sounds } from '../sounds.ts';
 import { bigCelebration, burst } from '../celebrate.ts';
-import { useCrazyFx } from '../components/CrazyFx.tsx';
+import { useModeFx } from '../components/ModeFx.tsx';
 
 export function Results() {
   const result = useLocation().state as QuizResult | null;
   const [shownStars, setShownStars] = useState(0);
-  const crazy = useCrazyFx();
+  const fx = useModeFx();
   const [review, setReview] = useState<ReviewQ[] | null>(null);
   const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     if (!result) return;
     const great = result.score / result.total >= 0.7;
-    if (great && crazy.enabled) {
-      crazy.fire('win');
+    if (great && fx.enabled) {
+      fx.fire('win');
     } else if (great) {
       sounds.fanfare();
       bigCelebration();
@@ -56,7 +56,7 @@ export function Results() {
       </section>
 
       <MascotSays mood="cheer">{msg}</MascotSays>
-      {crazy.overlay}
+      {fx.overlay}
 
       {result.newBadges.length > 0 && (
         <section className="card new-badges">

@@ -33,4 +33,22 @@ export function crazyConfetti() {
   }, 350);
 }
 
+/** Flood Mode: bubbles that float up instead of falling. */
+export function bubbles() {
+  if (calm()) return;
+  void confetti({
+    particleCount: 60, spread: 80, startVelocity: 30, gravity: -0.35, ticks: 260, scalar: 1.4,
+    origin: { y: 0.95 }, colors: ['#bde0fe', '#a2d2ff', '#90e0ef', '#ffffff'], shapes: ['circle'],
+  });
+}
+
+/** Retro Mode: flat square "pixels" in an old game console palette. */
+export function retroConfetti() {
+  if (calm()) return;
+  void confetti({
+    particleCount: 80, spread: 100, startVelocity: 40, scalar: 1.3, flat: true,
+    origin: { y: 0.6 }, colors: ['#e52521', '#fbd000', '#43b047', '#049cd8', '#ffffff'], shapes: ['square'],
+  });
+}
+
 export const reducedMotion = calm;

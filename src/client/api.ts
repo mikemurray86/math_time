@@ -30,6 +30,7 @@ export interface Me {
   bestStreak: number;
   lastDate: string | null;
   avatar: import('../shared/rewards.ts').Avatar;
+  seasons: import('../shared/rewards.ts').Season[]; // seasonal sets on sale in the Star Store
   badges: { code: string; earned_at: string }[];
 }
 

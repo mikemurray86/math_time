@@ -4,9 +4,10 @@ import type { Auth } from '../auth.ts';
 import { createKid, getKid, listKids, setCode, validGrade } from '../kids.ts';
 import { DEFAULT_GRADE, gradeSetList, seedBank } from '../seed.ts';
 import { DEFAULT_SETTINGS, getSettings, HttpError, quizReview, type Settings } from '../quiz.ts';
-import { GENERATORS, buildQuestion, generatorCatalog, sanitizeParams } from '../../shared/registry.ts';
+import { GENERATORS, buildQuestion, checkParams, generatorCatalog } from '../../shared/registry.ts';
 import { randomSeed } from '../../shared/rng.ts';
 import { isValidCode } from '../../shared/pictures.ts';
+import { isSeason } from '../../shared/rewards.ts';
 
 interface BankBody {
   kidId?: number;
@@ -32,7 +33,7 @@ function validEntry(body: BankBody) {
   const gen = GENERATORS[body?.generator];
   if (!gen) throw new HttpError(400, 'Unknown problem type');
   const label = str(body.label, 120) || gen.name;
-  return { gen, params: sanitizeParams(gen, body.params), label, note: str(body.note, 500), weight: clampWeight(body.weight) };
+  return { gen, params: checkParams(gen, body.params), label, note: str(body.note, 500), weight: clampWeight(body.weight) };
 }
 
 function validCode(code: unknown): number[] | null {
@@ -174,7 +175,7 @@ export function parentRoutes(app: FastifyInstance, db: DB, auth: Auth) {
     p.post<{ Body: { generator: string; params: unknown } }>('/api/parent/preview', async (req) => {
       const gen = GENERATORS[req.body?.generator];
       if (!gen) throw new HttpError(400, 'Unknown problem type');
-      const params = sanitizeParams(gen, req.body.params);
+      const params = checkParams(gen, req.body.params);
       return { params, samples: [0, 1, 2].map(() => buildQuestion(gen.id, params, randomSeed())) };
     });
 
@@ -226,9 +227,11 @@ export function parentRoutes(app: FastifyInstance, db: DB, auth: Auth) {
 
     p.put<{ Body: Partial<Settings> }>('/api/parent/settings', async (req) => {
       const b = req.body ?? {};
+      const cur = getSettings(db);
       const next: Settings = {
         quizLength: Math.min(30, Math.max(3, Math.round(Number(b.quizLength ?? DEFAULT_SETTINGS.quizLength)) || DEFAULT_SETTINGS.quizLength)),
-        allowRetry: b.allowRetry === undefined ? getSettings(db).allowRetry : !!b.allowRetry,
+        allowRetry: b.allowRetry === undefined ? cur.allowRetry : !!b.allowRetry,
+        seasons: Array.isArray(b.seasons) ? [...new Set(b.seasons.filter(isSeason))] : cur.seasons,
       };
       kvSet(db, 'settings', next);
       return next;

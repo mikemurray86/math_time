@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { DB } from '../db.ts';
 import type { Auth } from '../auth.ts';
 import { buyItem, checkCode, getKid, listKids, ownedItems, owns, saveAvatar } from '../kids.ts';
-import { answerQuestion, createQuiz, finishQuiz, HttpError, quizReview } from '../quiz.ts';
+import { answerQuestion, createQuiz, finishQuiz, getSettings, HttpError, quizReview } from '../quiz.ts';
 import { AVATAR_ITEMS, type Avatar, type Slot } from '../../shared/rewards.ts';
 
 export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
@@ -41,6 +41,7 @@ export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
       bestStreak: kid.bestStreak,
       lastDate: kid.lastDate,
       avatar: kid.avatar,
+      seasons: getSettings(db).seasons,
       badges: db.prepare('SELECT code, earned_at FROM kid_badges WHERE kid_id = ? ORDER BY earned_at').all(kid.id),
     };
   });
@@ -63,6 +64,7 @@ export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
     const kid = currentKid(req);
     const item = AVATAR_ITEMS.find((i) => i.id === req.body?.itemId);
     if (!item) throw new HttpError(400, 'Unknown item');
+    if (item.season && !getSettings(db).seasons.includes(item.season)) throw new HttpError(409, 'That one isn’t in the Star Store right now');
     const err = buyItem(db, kid, item);
     if (err) throw new HttpError(409, err);
     const avatar = { ...kid.avatar, [item.slot]: item.id };

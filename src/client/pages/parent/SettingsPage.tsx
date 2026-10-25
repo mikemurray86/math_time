@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api.ts';
+import { SEASONS, type Season } from '../../../shared/rewards.ts';
 
 interface Settings {
   quizLength: number;
   allowRetry: boolean;
+  seasons: Season[];
 }
 
 export function SettingsPage() {
@@ -35,6 +37,20 @@ export function SettingsPage() {
             Give one hint and a second try after a wrong answer
           </label>
         </div>
+        <fieldset className="field">
+          <legend>Seasonal Star Store items</legend>
+          {SEASONS.map((season) => (
+            <label key={season.id} className="check">
+              <input
+                type="checkbox"
+                checked={s.seasons.includes(season.id)}
+                onChange={(e) => setS({ ...s, seasons: e.target.checked ? [...s.seasons, season.id] : s.seasons.filter((x) => x !== season.id) })}
+              />
+              {season.emoji} {season.label}
+            </label>
+          ))}
+          <p className="muted">Switched-on sets can be bought in the Star Store. Turning one off takes it out of the store, but children keep anything they already bought.</p>
+        </fieldset>
         <div className="action-row">
           <button type="button" className="btn btn-primary" onClick={save}>Save</button>
           {saved && <span className="good">Saved ✓</span>}

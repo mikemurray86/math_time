@@ -3,13 +3,13 @@ import { DEFAULT_AVATAR, helperName, type HelperLook } from '../../shared/reward
 import { useHelperLook } from '../helperLook.tsx';
 
 export type Mood = 'idle' | 'cheer' | 'think' | 'encourage';
-type Kind = 'fox' | 'wolf' | 'horse' | 'bear';
+type Kind = 'fox' | 'wolf' | 'horse' | 'bear' | 'dragon' | 'unicorn';
 
 interface Fur {
   main: string;
-  inner: string; // inside the ears; the horse's mane
+  inner: string; // inside the ears; the horse's and unicorn's mane; the dragon's spikes
   muzzle: string;
-  tip: string; // tail tip
+  tip: string; // tail tip; the dragon's horns
   outline?: string;
 }
 
@@ -19,6 +19,8 @@ const CLASSIC: Record<Kind, Fur> = {
   wolf: { main: '#646b7c', inner: '#353a48', muzzle: '#eef0f5', tip: '#eef0f5' }, // darker than Silver
   horse: { main: '#a86b3c', inner: '#4a2b16', muzzle: '#e8c9a8', tip: '#4a2b16' },
   bear: { main: '#faf7ef', inner: '#d8d0bf', muzzle: '#ffffff', tip: '#faf7ef', outline: '#cfc5b0' },
+  dragon: { main: '#3fb36b', inner: '#1f7a45', muzzle: '#c8f0b8', tip: '#ffd166' },
+  unicorn: { main: '#fdfbff', inner: '#ff8fc7', muzzle: '#fde8f3', tip: '#ff8fc7', outline: '#e2d6ee' },
 };
 
 const FURS: Record<string, Fur> = {
@@ -26,17 +28,28 @@ const FURS: Record<string, Fur> = {
   'hfur-silver': { main: '#a7adbb', inner: '#5d6375', muzzle: '#f2f3f7', tip: '#f2f3f7' },
   'hfur-ruby': { main: '#d6334a', inner: '#6e1424', muzzle: '#ffe9ec', tip: '#ffe9ec' },
   'hfur-lilac': { main: '#b48cf2', inner: '#5b3d99', muzzle: '#f6efff', tip: '#f6efff' },
+  'hfur-moonlight': { main: '#8a7fb0', inner: '#3b2f5c', muzzle: '#ece8fb', tip: '#ffd166' },
+  'hfur-maple': { main: '#c8502a', inner: '#6b2410', muzzle: '#ffe8d6', tip: '#ffb347' },
   'hfur-galaxy': { main: 'galaxy', inner: '#1f1446', muzzle: '#e8e3ff', tip: '#ffd60a' },
 };
 
-const KINDS: Record<string, Kind> = { 'helper-fox': 'fox', 'helper-wolf': 'wolf', 'helper-horse': 'horse', 'helper-bear': 'bear' };
-const KIND_NAMES: Record<Kind, string> = { fox: 'fox', wolf: 'wolf', horse: 'horse', bear: 'polar bear' };
+const KINDS: Record<string, Kind> = {
+  'helper-fox': 'fox',
+  'helper-wolf': 'wolf',
+  'helper-horse': 'horse',
+  'helper-bear': 'bear',
+  'helper-dragon': 'dragon',
+  'helper-unicorn': 'unicorn',
+};
+const KIND_NAMES: Record<Kind, string> = { fox: 'fox', wolf: 'wolf', horse: 'horse', bear: 'polar bear', dragon: 'dragon', unicorn: 'unicorn' };
+/** The unicorn is drawn on the horse's body, so it shares the horse's lower mouth and longer neck. */
+const horseShaped = (k: Kind) => k === 'horse' || k === 'unicorn';
 
 type Paint = { main: string; f: Fur; line: object };
 
 /** Tail, body and head for each animal. Eyes sit at (49, 58) and (71, 58) on all of them. */
 function Animal({ kind, main, f, line }: { kind: Kind } & Paint) {
-  if (kind === 'horse') {
+  if (horseShaped(kind)) {
     return (
       <g>
         <path d="M84 94 q24 -2 26 22 q-7 -8 -15 -6 q3 -8 -11 -13 z" fill={f.inner} />
@@ -52,6 +65,32 @@ function Animal({ kind, main, f, line }: { kind: Kind } & Paint) {
         <ellipse cx="60" cy="80" rx="20" ry="13" fill={f.muzzle} />
         <ellipse cx="53" cy="79" rx="2.3" ry="3.2" fill="#2d2240" />
         <ellipse cx="67" cy="79" rx="2.3" ry="3.2" fill="#2d2240" />
+        {kind === 'unicorn' && (
+          <g>
+            <path d="M55 29 L60 1 L65 29 z" fill="#ffd166" stroke="#e0a800" strokeWidth="1.5" strokeLinejoin="round" />
+            <path d="M56.5 22 l7 -3 M57.5 15 l5 -2.5 M58.5 8 l3 -1.5" stroke="#e0a800" strokeWidth="1.5" strokeLinecap="round" />
+          </g>
+        )}
+      </g>
+    );
+  }
+  if (kind === 'dragon') {
+    return (
+      <g>
+        <path d="M40 92 Q8 64 4 92 Q12 88 16 98 Q22 92 30 102 z" fill={f.inner} />
+        <path d="M80 92 Q112 64 116 92 Q108 88 104 98 Q98 92 90 102 z" fill={f.inner} />
+        <path d="M84 104 q26 2 24 -22 q-6 14 -24 14 z" fill={main} {...line} />
+        <path d="M108 82 l-7 -3 l6 -7 l5 7 z" fill={f.tip} />
+        <ellipse cx="60" cy="100" rx="26" ry="16" fill={main} {...line} />
+        <ellipse cx="60" cy="104" rx="14" ry="10" fill={f.muzzle} />
+        <path d="M52 108 h16 M54 102 h12" stroke={f.inner} strokeWidth="1.5" opacity=".5" />
+        <path d="M36 40 L26 10 L48 32 z" fill={f.tip} />
+        <path d="M84 40 L94 10 L72 32 z" fill={f.tip} />
+        <path d="M50 32 L54 22 L58 30 L62 22 L66 30 L70 22 L72 32 z" fill={f.inner} />
+        <path d="M26 58 Q26 30 60 30 Q94 30 94 58 Q94 88 60 88 Q26 88 26 58 z" fill={main} {...line} />
+        <ellipse cx="60" cy="73" rx="19" ry="12.5" fill={f.muzzle} />
+        <ellipse cx="54.5" cy="68" rx="2" ry="1.5" fill="#2d2240" />
+        <ellipse cx="65.5" cy="68" rx="2" ry="1.5" fill="#2d2240" />
       </g>
     );
   }
@@ -123,6 +162,23 @@ function Hat({ id }: { id: string }) {
           <circle cx="60" cy="12" r="6" fill="#fff" />
         </g>
       );
+    case 'hhat-chef':
+      return (
+        <g fill="#fff" stroke="#d8d0bf" strokeWidth="1.5">
+          <path d="M44 32 L44 22 Q34 20 37 11 Q41 3 50 8 Q54 -1 62 4 Q70 -1 74 8 Q84 5 83 15 Q82 22 76 22 L76 32 z" />
+          <rect x="43" y="28" width="34" height="8" rx="2" fill="#f1ece2" />
+        </g>
+      );
+    case 'hhat-grad':
+      return (
+        <g>
+          <path d="M44 26 L44 36 Q60 42 76 36 L76 26 z" fill="#1d1d2b" />
+          <path d="M28 22 L60 10 L92 22 L60 34 z" fill="#2d2240" />
+          <path d="M60 22 L84 27 L84 38" fill="none" stroke="#ffd60a" strokeWidth="2" />
+          <rect x="81" y="37" width="6" height="8" rx="2" fill="#ffd60a" />
+          <circle cx="60" cy="22" r="2.5" fill="#ffd60a" />
+        </g>
+      );
     case 'hhat-top':
       return (
         <g>
@@ -137,6 +193,41 @@ function Hat({ id }: { id: string }) {
           <path d="M28 38 Q60 0 92 38 Q60 26 28 38 z" fill="#2d2240" />
           <circle cx="60" cy="22" r="4.5" fill="#fff" />
           <path d="M53 29 L67 35 M67 29 L53 35" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+      );
+    case 'hhat-witch':
+      return (
+        <g>
+          <path d="M42 36 L66 -2 L62 14 L78 36 z" fill="#2d2240" />
+          <rect x="42" y="29" width="36" height="6" fill="#9b5de5" />
+          <ellipse cx="60" cy="37" rx="30" ry="5" fill="#1d1d2b" />
+        </g>
+      );
+    case 'hhat-leaves':
+      return (
+        <g>
+          {[[34, 40, -50, '#d9572b'], [46, 33, -25, '#ffb347'], [60, 30, 0, '#c0392b'], [74, 33, 25, '#e9a23b'], [86, 40, 50, '#d9572b']].map(([x, y, r, c]) => (
+            <g key={x} transform={`rotate(${r} ${x} ${y})`}>
+              <path d={`M${x} ${Number(y) + 8} Q${Number(x) - 8} ${y} ${x} ${Number(y) - 9} Q${Number(x) + 8} ${y} ${x} ${Number(y) + 8} z`} fill={String(c)} />
+              <path d={`M${x} ${Number(y) + 8} V${Number(y) - 5}`} stroke="#7a2e14" strokeWidth="1.2" />
+            </g>
+          ))}
+        </g>
+      );
+    case 'hhat-flowers':
+      return (
+        <g>
+          {[[34, 40], [46, 33], [60, 30], [74, 33], [86, 40]].map(([x, y], i) => (
+            <g key={x}>
+              <ellipse cx={x + 6} cy={y + 3} rx="4" ry="2.2" fill="#43b047" transform={`rotate(20 ${x + 6} ${y + 3})`} />
+              <g fill={['#ff5d8f', '#ffc93c', '#c77dff', '#ffc93c', '#ff5d8f'][i]}>
+                {[0, 72, 144, 216, 288].map((a) => (
+                  <circle key={a} cx={x + 3.6 * Math.cos((a * Math.PI) / 180)} cy={y + 3.6 * Math.sin((a * Math.PI) / 180)} r="3" />
+                ))}
+              </g>
+              <circle cx={x} cy={y} r="2.2" fill="#fff4b0" />
+            </g>
+          ))}
         </g>
       );
     case 'hhat-crown':
@@ -179,6 +270,38 @@ function Extra({ id, neck }: { id: string; neck: number }) {
           <path d="M58.5 57 h3" fill="none" />
         </g>
       );
+    case 'hextra-calculator':
+      return (
+        <g>
+          <rect x="68" y="88" width="20" height="26" rx="3" fill="#3a6df0" stroke="#2a4fc0" strokeWidth="1.5" />
+          <rect x="71" y="91" width="14" height="6" rx="1" fill="#c8f0b8" />
+          <g fill="#fff">
+            {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => <rect key={`${r}${c}`} x={71.5 + c * 4.7} y={100 + r * 4.4} width="3.4" height="3" rx="0.8" />))}
+          </g>
+        </g>
+      );
+    case 'hextra-pumpkin':
+      return (
+        <g>
+          <path d="M70 94 Q78 82 86 94" fill="none" stroke="#2d2240" strokeWidth="2" />
+          <ellipse cx="78" cy="104" rx="12" ry="10" fill="#ff8c1a" stroke="#d96a00" strokeWidth="1.5" />
+          <path d="M72 96 Q70 104 72 112 M84 96 Q86 104 84 112" fill="none" stroke="#d96a00" strokeWidth="1.2" />
+          <g fill="#2d2240">
+            <path d="M72 101 l3 -3 l3 3 z" /><path d="M78 101 l3 -3 l3 3 z" />
+            <path d="M71 106 q7 6 14 0 l-2 1 l-1.5 -1.5 l-2 2 l-2 -2 l-2 2 l-1.5 -1.5 z" />
+          </g>
+        </g>
+      );
+    case 'hextra-cocoa':
+      return (
+        <g>
+          <path d="M74 88 q-3 -4 0 -8 M80 88 q-3 -4 0 -8" fill="none" stroke="#c8bfb0" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M84 96 q8 0 8 6 q0 6 -8 6" fill="none" stroke="#e63946" strokeWidth="3" />
+          <rect x="68" y="90" width="18" height="22" rx="3" fill="#e63946" />
+          <ellipse cx="77" cy="91" rx="9" ry="2.5" fill="#6b3a1e" />
+          <path d="M72 101 l5 -3 l5 3 l-5 5 z" fill="#fff" opacity=".85" />
+        </g>
+      );
     case 'hextra-medal':
       return at(
         <g>
@@ -192,14 +315,14 @@ function Extra({ id, neck }: { id: string; neck: number }) {
   }
 }
 
-/** The child's math helper (Pip, Luna, Maple or Popsicle), dressed however they chose in the Star Store. */
+/** The child's math helper (Pip, Luna, Maple, Popsicle, Ember or Stardust), dressed however they chose in the Star Store. */
 export function Helper({ mood = 'idle', size = 96, look = DEFAULT_AVATAR }: { mood?: Mood; size?: number; look?: HelperLook }) {
   const gid = useId();
   const kind = KINDS[look.helper] ?? 'fox';
   const f = FURS[look.helperFur] ?? CLASSIC[kind];
   const main = f.main === 'galaxy' ? `url(#${gid})` : f.main;
   const line = f.outline ? { stroke: f.outline, strokeWidth: 1.5 } : {};
-  const horse = kind === 'horse';
+  const horse = horseShaped(kind);
   const eyes =
     mood === 'cheer' ? (
       <g stroke="#2d2240" strokeWidth="3.5" fill="none" strokeLinecap="round">

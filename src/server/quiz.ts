@@ -3,7 +3,7 @@ import { getKid, saveRewards } from './kids.ts';
 import { buildQuestion, GENERATORS, toPublic } from '../shared/registry.ts';
 import { grade } from '../shared/grade.ts';
 import { randomSeed } from '../shared/rng.ts';
-import { BADGES, starsFor } from '../shared/rewards.ts';
+import { BADGES, starsFor, type Season } from '../shared/rewards.ts';
 
 export class HttpError extends Error {
   status: number;
@@ -16,9 +16,10 @@ export class HttpError extends Error {
 export interface Settings {
   quizLength: number;
   allowRetry: boolean;
+  seasons: Season[]; // seasonal Star Store sets that are switched on
 }
 
-export const DEFAULT_SETTINGS: Settings = { quizLength: 10, allowRetry: true };
+export const DEFAULT_SETTINGS: Settings = { quizLength: 10, allowRetry: true, seasons: [] };
 
 export const getSettings = (db: DB): Settings => ({ ...DEFAULT_SETTINGS, ...kvGet<Partial<Settings>>(db, 'settings', {}) });
 

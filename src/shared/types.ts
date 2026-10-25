@@ -77,4 +77,8 @@ export interface GeneratorDef<P extends Params = Params> {
   fields: ParamField[];
   presets: { id: string; label: string; params: P }[];
   generate(params: P, rng: Rng): Question;
+  /** For params that don't fit `fields` (parent-written templates): clean them up, or throw a message for the parent. */
+  sanitize?(raw: unknown): P;
+  /** A slower check, run only when the parent previews or saves: throw a message if the params can't make good questions. */
+  validate?(params: P): void;
 }

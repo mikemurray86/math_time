@@ -221,3 +221,60 @@ describe('4th grade constraints', () => {
     }
   });
 });
+
+describe('custom templates', () => {
+  const gen = GENERATORS.custom;
+  const presetParams = (id: string) => gen.presets.find((p) => p.id === id)!.params;
+
+  it('follows its rules and works out the answer from the drawn numbers', () => {
+    for (const seed of SEEDS) {
+      const q = buildQuestion('custom', presetParams('stickers'), seed);
+      const [a, b] = richText(q.prompt).match(/\d+/g)!.map(Number);
+      expect(b).toBeLessThan(a);
+      expect(q.answer).toEqual({ kind: 'number', value: String(a - b) });
+    }
+  });
+
+  it('asks for several numbers with labeled boxes', () => {
+    const q = buildQuestion('custom', presetParams('teams'), 5);
+    expect(q.input).toEqual({ kind: 'multi', fields: ['Full teams', 'Left over'] });
+    const [n, size] = richText(q.prompt).match(/\d+/g)!.map(Number);
+    expect(q.answer).toEqual({ kind: 'multi', values: [String(Math.floor(n / size)), String(n % size)] });
+    expect(n % size).not.toBe(0);
+  });
+
+  it('writes numbers in the form the template uses', () => {
+    const q = buildQuestion('custom', presetParams('recipe'), 3);
+    expect(q.prompt.some((p) => typeof p !== 'string' && (p.t === 'mixed' || p.t === 'frac' || p.t === 'int'))).toBe(true);
+    const dec = { ...presetParams('recipe'), vars: [{ name: 'cups', type: 'decimal', min: 0.5, max: 3, places: 1 }, { name: 'batches', type: 'whole', min: 2, max: 6, step: 1 }] };
+    for (const seed of SEEDS.slice(0, 100)) {
+      const p = buildQuestion('custom', dec, seed).prompt;
+      expect(p.some((x) => typeof x !== 'string' && (x.t === 'frac' || x.t === 'mixed'))).toBe(false);
+    }
+  });
+
+  it('only asks for a fraction form when the answer is one', () => {
+    const params = { ...presetParams('stickers'), form: 'fraction' };
+    expect(buildQuestion('custom', params, 1).answer).not.toHaveProperty('form');
+  });
+
+  it('explains template mistakes in plain words', () => {
+    const base = presetParams('stickers');
+    const bad = (patch: object) => () => gen.validate!(sanitizeParams(gen, { ...base, ...patch }) as never);
+    expect(bad({ text: 'How many {apples}?' })).toThrow(/Question: “apples” isn’t defined/);
+    expect(bad({ text: 'What is {answer}?' })).toThrow(/only be used in the steps/);
+    expect(bad({ text: 'Oops {a' })).toThrow(/missing its }/);
+    expect(bad({ answers: [{ label: '', formula: 'a - ', suffix: '' }] })).toThrow(/Answer:/);
+    expect(bad({ answers: [{ label: '', formula: 'name + 1', suffix: '' }] })).toThrow(/list of words/);
+    expect(bad({ where: ['a > 1000'] })).toThrow(/don’t fit the rules/);
+    expect(bad({ vars: [...base.vars as object[], { name: 'a', type: 'whole', min: 1, max: 2 }] })).toThrow(/two numbers named “a”/);
+    expect(bad({ vars: [{ name: 'and', type: 'whole', min: 1, max: 2 }] })).toThrow(/reserved/);
+    expect(bad({ text: '' })).toThrow(/Type the question/);
+    expect(bad({ form: 'decimal', answers: [{ label: '', formula: 'a / 3', suffix: '' }], where: ['not whole(a / 3)'] })).toThrow(/decimal/);
+  });
+
+  it('a calc can only use numbers above it', () => {
+    const vars = [{ name: 'area', type: 'calc', formula: 'w * 2' }, { name: 'w', type: 'whole', min: 1, max: 5 }];
+    expect(() => sanitizeParams(gen, { ...presetParams('missing-side'), vars })).toThrow(/Number “area”: “w” isn’t defined above it/);
+  });
+});

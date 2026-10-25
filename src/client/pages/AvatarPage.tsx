@@ -2,15 +2,23 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.ts';
 import { useMe } from '../useMe.ts';
-import { AVATAR_ITEMS, DEFAULT_AVATAR, helperName, type Avatar, type AvatarItem, type Slot } from '../../shared/rewards.ts';
+import { AVATAR_ITEMS, DEFAULT_AVATAR, SEASONS, helperName, type Avatar, type AvatarItem, type Slot } from '../../shared/rewards.ts';
 import { AvatarView } from '../components/AvatarView.tsx';
 import { Helper } from '../components/Mascot.tsx';
 import { useHelperLook } from '../helperLook.tsx';
 import { sounds } from '../sounds.ts';
-import { useCrazyFx } from '../components/CrazyFx.tsx';
+import { useModeFx } from '../components/ModeFx.tsx';
 import { burst } from '../celebrate.ts';
 
 type Who = 'me' | 'helper';
+
+const MODES: Record<string, { icon: string; about: string }> = {
+  'mode-normal': { icon: '😊', about: 'Normal mode: a happy chime and confetti for right answers.' },
+  'mode-crazy': { icon: '🤪', about: 'Crazy Mode makes right and wrong answers WAY over the top: flashing colors, giant confetti, and your helper zooming around the screen!' },
+  'mode-flood': { icon: '🌊', about: 'Flood Mode: every miss raises the water a little more, and it stays for the whole quiz. Right answers send bubbles floating up. Can you keep it dry?' },
+  'mode-disco': { icon: '🪩', about: 'Disco Mode: a disco ball drops and your helper boogies across the screen with a dancing snail! Miss one and the record scratches… and the snail is very confused.' },
+  'mode-retro': { icon: '👾', about: 'Retro Mode turns your quiz into an old video game: 8-bit sounds, pixel confetti, and your helper jumping like it just found a coin!' },
+};
 
 const SLOTS: Record<Who, { slot: Slot; label: string }[]> = {
   me: [
@@ -32,7 +40,7 @@ const SLOTS: Record<Who, { slot: Slot; label: string }[]> = {
 export function AvatarPage() {
   const [me, setMe] = useMe();
   const { setAvatar } = useHelperLook();
-  const crazy = useCrazyFx();
+  const fx = useModeFx();
   const [who, setWho] = useState<Who>('me');
   const [slot, setSlot] = useState<Slot>('color');
   const [buying, setBuying] = useState<AvatarItem | null>(null);
@@ -41,6 +49,9 @@ export function AvatarPage() {
   const avatar: Avatar = { ...DEFAULT_AVATAR, ...me.avatar };
 
   const owned = new Set(me.owned);
+  const seasons = new Set(me.seasons);
+  // seasonal items are for sale only while a grown-up has their set switched on; anything already bought stays
+  const inStore = (i: AvatarItem) => !i.season || seasons.has(i.season) || owned.has(i.id);
 
   const wear = async (id: string) => {
     sounds.tap();
@@ -68,7 +79,7 @@ export function AvatarPage() {
   };
 
   const preview = (a: Avatar, size: number) => (who === 'me' ? <AvatarView avatar={a} size={size} /> : <Helper look={a} size={size} mood="cheer" />);
-  const tile = (a: Avatar) => (slot === 'mode' ? <span className="mode-icon">{a.mode === 'mode-crazy' ? '🤪' : '😊'}</span> : preview(a, 64));
+  const tile = (a: Avatar) => (slot === 'mode' ? <span className="mode-icon">{MODES[a.mode]?.icon ?? '😊'}</span> : preview(a, 64));
 
   return (
     <main className="page kid avatar-page">
@@ -95,18 +106,18 @@ export function AvatarPage() {
       </div>
       {slot === 'mode' && (
         <>
-          <p className="muted">Crazy Mode makes right and wrong answers WAY over the top: flashing colors, giant confetti, and your helper zooming around the screen!</p>
-          {avatar.mode === 'mode-crazy' && (
+          <p className="muted">{MODES[avatar.mode]?.about}</p>
+          {fx.enabled && (
             <div className="try-row">
-              <button type="button" className="btn" onClick={() => crazy.fire('win')}>▶ Try a right answer</button>
-              <button type="button" className="btn" onClick={() => crazy.fire('oops')}>▶ Try a miss</button>
+              <button type="button" className="btn" onClick={() => fx.fire('win')}>▶ Try a right answer</button>
+              <button type="button" className="btn" onClick={() => fx.fire('oops')}>▶ Try a miss</button>
             </div>
           )}
         </>
       )}
-      {crazy.overlay}
+      {fx.overlay}
       <ul className="item-grid">
-        {AVATAR_ITEMS.filter((i) => i.slot === slot).map((item) => {
+        {AVATAR_ITEMS.filter((i) => i.slot === slot && inStore(i)).map((item) => {
           const have = owned.has(item.id);
           const affordable = me.stars >= item.stars;
           const selected = avatar[slot] === item.id;
@@ -128,6 +139,7 @@ export function AvatarPage() {
                 <span>{item.label}</span>
                 {!have && <span className={`price ${affordable ? 'can-buy' : ''}`}>{affordable ? '' : '🔒 '}{item.stars}⭐</span>}
                 {selected && <span className="wearing">Wearing</span>}
+                {item.season && <span className="season-tag" aria-label={SEASONS.find((s) => s.id === item.season)?.label}>{SEASONS.find((s) => s.id === item.season)?.emoji}</span>}
               </button>
             </li>
           );
@@ -138,6 +150,7 @@ export function AvatarPage() {
           <div className="sheet card" role="dialog" aria-modal="true" aria-label={`Buy ${buying.label}`} onClick={(e) => e.stopPropagation()}>
             <div className="sheet-preview">{buying.slot === 'mode' ? tile({ ...avatar, mode: buying.id }) : preview({ ...avatar, [buying.slot]: buying.id }, 120)}</div>
             <h2>{buying.label}</h2>
+            {buying.slot === 'mode' && <p className="muted">{MODES[buying.id]?.about}</p>}
             {me.stars >= buying.stars ? (
               <>
                 <p>Buy it for <strong>{buying.stars}⭐</strong>? You’ll have {me.stars - buying.stars}⭐ left.</p>

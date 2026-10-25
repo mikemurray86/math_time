@@ -10,7 +10,7 @@ import { QuestionInput, draftReady, draftToResponse, initialDraft, type Draft } 
 import { SoundToggle } from '../components/SoundToggle.tsx';
 import { sounds } from '../sounds.ts';
 import { burst } from '../celebrate.ts';
-import { useCrazyFx } from '../components/CrazyFx.tsx';
+import { useModeFx } from '../components/ModeFx.tsx';
 
 interface QuizData {
   quizId: number;
@@ -60,7 +60,7 @@ export function Quiz() {
   const [praise, setPraise] = useState('');
   const [busy, setBusy] = useState(false);
   const [stars, setStars] = useState(0);
-  const crazy = useCrazyFx();
+  const fx = useModeFx();
   const started = useRef(false);
   const shownAt = useRef(Date.now());
 
@@ -105,13 +105,13 @@ export function Quiz() {
       setStars((s) => s + res.stars);
       if (res.correct) {
         setPraise(pick(feedback ? RETRY_PRAISE : PRAISE));
-        if (crazy.enabled) crazy.fire('win');
+        if (fx.enabled) fx.fire('win');
         else {
           sounds.correct();
           burst();
         }
-      } else if (crazy.enabled) {
-        crazy.fire('oops');
+      } else if (fx.enabled) {
+        fx.fire('oops');
       } else if (res.final) {
         sounds.reveal();
       } else {
@@ -186,7 +186,7 @@ export function Quiz() {
       )}
 
       <ScratchPad key={`scratch-${q.id}`} numberLine={numberLineFor(q.input)} />
-      {crazy.overlay}
+      {fx.overlay}
 
       <div className="action-bar">
         {feedback?.final ? (

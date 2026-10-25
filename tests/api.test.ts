@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { pickEntries } from '../src/server/quiz.ts';
 import type { Answer } from '../src/shared/types.ts';
 import { Fraction } from '../src/shared/fraction.ts';
+import { richText } from '../src/shared/expr.ts';
 
 let db: DB;
 let app: Awaited<ReturnType<typeof buildApp>>;
@@ -120,6 +121,7 @@ describe('kid flow', () => {
     expect((await put({ helperHat: 'hat-bow' })).statusCode).toBe(400); // avatar item in a helper slot
     expect((await put({ helper: 'helper-horse' })).json().helper).toBe('helper-horse'); // helpers are free
     expect((await put({ helper: 'helper-bear' })).json().helper).toBe('helper-bear');
+    expect((await put({ helper: 'helper-dragon' })).statusCode).toBe(403); // the dragon and unicorn cost 750 stars
     expect((await put({ mode: 'mode-crazy' })).statusCode).toBe(403); // Crazy Mode costs 75 stars
   });
 
@@ -150,6 +152,35 @@ describe('kid flow', () => {
     const leoCookie = cookieOf(await post('/api/kid/login', { kidId: leo }, ''));
     const leoMe = (await app.inject({ url: '/api/me', headers: { cookie: leoCookie } })).json();
     expect(leoMe.owned).not.toContain('hhat-party');
+  });
+
+  it('sells seasonal items only while their set is switched on', async () => {
+    const buy = (itemId: string) => post('/api/shop/buy', { itemId });
+    const me = () => app.inject({ url: '/api/me', headers: { cookie: kidCookie } }).then((r) => r.json());
+    const setSeasons = (seasons: unknown) => app.inject({ method: 'PUT', url: '/api/parent/settings', headers: { cookie }, payload: { seasons } });
+    const cookie = await login();
+    db.prepare('UPDATE kids SET stars = 500 WHERE id = ?').run(kidId);
+
+    expect((await me()).seasons).toEqual([]); // off by default
+    expect((await buy('hat-witch')).statusCode).toBe(409);
+
+    expect((await setSeasons(['halloween', 'bogus', 'halloween'])).json().seasons).toEqual(['halloween']);
+    expect((await me()).seasons).toEqual(['halloween']);
+    expect((await buy('hat-witch')).statusCode).toBe(200);
+    expect((await buy('hat-acorn')).statusCode).toBe(409); // fall is still off
+
+    // switching the set off keeps what she bought, and she can still wear it
+    await setSeasons([]);
+    await app.inject({ method: 'PUT', url: '/api/avatar', payload: { hat: 'hat-none' }, headers: { cookie: kidCookie } });
+    const put = await app.inject({ method: 'PUT', url: '/api/avatar', payload: { hat: 'hat-witch' }, headers: { cookie: kidCookie } });
+    expect(put.json().hat).toBe('hat-witch');
+    expect((await me()).owned).toContain('hat-witch');
+    expect((await buy('hhat-witch')).statusCode).toBe(409);
+
+    // other settings saves leave the seasons alone
+    await setSeasons(['fall']);
+    await app.inject({ method: 'PUT', url: '/api/parent/settings', headers: { cookie }, payload: { quizLength: 5 } });
+    expect((await me()).seasons).toEqual(['fall']);
   });
 
   it('explains an empty bank', async () => {
@@ -198,6 +229,38 @@ describe('parent area', () => {
     expect(review.questions).toHaveLength(4);
     expect(review.questions[0].first).toEqual({ value: '1' });
     expect(review.questions[0].question.explanation.length).toBeGreaterThan(0);
+  });
+});
+
+describe('custom templates', () => {
+  it('saves a parent-written question, quizzes on it, and keeps old reviews when it is edited', async () => {
+    const cookie = await login();
+    const get = (url: string) => app.inject({ url, headers: { cookie } });
+    const params = {
+      text: 'Pens cost {p} each. How much do {n} pens cost?',
+      vars: [{ name: 'p', type: 'whole', min: 2, max: 9 }, { name: 'n', type: 'whole', min: 2, max: 9 }],
+      answers: [{ formula: 'p * n', suffix: 'dollars' }],
+    };
+    const bad = await post('/api/parent/preview', { generator: 'custom', params: { ...params, answers: [{ formula: 'p * q' }] } }, cookie);
+    expect(bad.statusCode).toBe(400);
+    expect(bad.json().error).toMatch(/“q” isn’t defined/);
+    expect((await post('/api/parent/bank', { kidId, generator: 'custom', params: { ...params, text: '' } }, cookie)).statusCode).toBe(400);
+
+    const preview = (await post('/api/parent/preview', { generator: 'custom', params }, cookie)).json();
+    expect(preview.samples).toHaveLength(3);
+    db.prepare('UPDATE bank_entries SET enabled = 0 WHERE kid_id = ?').run(kidId);
+    const { id } = (await post('/api/parent/bank', { kidId, generator: 'custom', params, label: 'Pens', note: 'Unit 2 test' }, cookie)).json();
+
+    await app.inject({ method: 'PUT', url: '/api/parent/settings', headers: { cookie }, payload: { quizLength: 3 } });
+    const quiz = (await post('/api/quiz')).json();
+    expect(richText(quiz.questions[0].prompt)).toMatch(/^Pens cost \d each\. How much do \d pens cost\?$/);
+    const r = (await post(`/api/quiz/${quiz.quizId}/answer`, { questionId: quiz.questions[0].id, response: rightResponse(answerFor(quiz.questions[0].id)) })).json();
+    expect(r).toMatchObject({ correct: true, stars: 2 });
+    await post(`/api/quiz/${quiz.quizId}/finish`, {});
+
+    await app.inject({ method: 'PUT', url: `/api/parent/bank/${id}`, headers: { cookie }, payload: { generator: 'custom', params: { ...params, text: 'Changed {p} {n}' }, label: 'Pens' } });
+    const review = (await get(`/api/parent/quiz/${quiz.quizId}`)).json();
+    expect(richText(review.questions[0].question.prompt)).toMatch(/^Pens cost/);
   });
 });
 
