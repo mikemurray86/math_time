@@ -10,6 +10,7 @@ export interface OrderParams {
   maxDen: number;
   direction: 'asc' | 'desc' | 'either';
   closeness: 'spread' | 'close';
+  positiveOnly: boolean;
 }
 
 export const orderNumbers: GeneratorDef<OrderParams> = {
@@ -17,7 +18,7 @@ export const orderNumbers: GeneratorDef<OrderParams> = {
   name: 'Order numbers',
   skill: 'Ordering numbers',
   description: 'Drag a mix of negatives, fractions, decimals and absolute values into order.',
-  defaults: { count: 5, forms: ['integer', 'improper', 'abs'], range: 6, maxDen: 6, direction: 'asc', closeness: 'spread' },
+  defaults: { count: 5, forms: ['integer', 'improper', 'abs'], range: 6, maxDen: 6, direction: 'asc', closeness: 'spread', positiveOnly: false },
   fields: [
     { key: 'count', label: 'How many numbers', type: 'int', min: 3, max: 7 },
     { key: 'forms', label: 'Kinds of numbers (each one appears at least once)', type: 'multi', options: numberFormOptions },
@@ -42,15 +43,19 @@ export const orderNumbers: GeneratorDef<OrderParams> = {
         { value: 'close', label: 'Bunched near zero (harder)' },
       ],
     },
+    { key: 'positiveOnly', label: 'Positive numbers only (no negatives)', type: 'bool' },
   ],
   presets: [
-    { id: 'mix-abs-improper', label: 'Negatives, improper fractions & absolute values (5)', params: { count: 5, forms: ['integer', 'improper', 'abs'], range: 6, maxDen: 6, direction: 'asc', closeness: 'spread' } },
-    { id: 'everything', label: 'Everything mixed (6, bunched)', params: { count: 6, forms: ['integer', 'fraction', 'improper', 'mixed', 'decimal', 'abs'], range: 5, maxDen: 8, direction: 'either', closeness: 'close' } },
-    { id: 'fractions-decimals', label: 'Fractions & decimals (4)', params: { count: 4, forms: ['fraction', 'improper', 'decimal'], range: 4, maxDen: 8, direction: 'asc', closeness: 'close' } },
+    { id: 'mix-abs-improper', label: 'Negatives, improper fractions & absolute values (5)', params: { count: 5, forms: ['integer', 'improper', 'abs'], range: 6, maxDen: 6, direction: 'asc', closeness: 'spread', positiveOnly: false } },
+    { id: 'everything', label: 'Everything mixed (6, bunched)', params: { count: 6, forms: ['integer', 'fraction', 'improper', 'mixed', 'decimal', 'abs'], range: 5, maxDen: 8, direction: 'either', closeness: 'close', positiveOnly: false } },
+    { id: 'positive-fractions', label: 'Positive fractions & decimals (4), no negatives', params: { count: 4, forms: ['fraction', 'mixed', 'decimal'], range: 3, maxDen: 12, direction: 'asc', closeness: 'close', positiveOnly: true } },
+    { id: 'fractions-decimals', label: 'Fractions & decimals (4)', params: { count: 4, forms: ['fraction', 'improper', 'decimal'], range: 4, maxDen: 8, direction: 'asc', closeness: 'close', positiveOnly: false } },
   ],
   generate(p, rng) {
     const forms = p.forms.length ? p.forms : (['integer'] as NumberForm[]);
-    const [lo, hi] = p.closeness === 'close' ? ((c) => [c - 2, c + 2])(rng.int(-1, 1)) : [-p.range, p.range];
+    const [lo, hi] = p.positiveOnly
+      ? [0, p.closeness === 'close' ? Math.min(p.range, 3) : p.range]
+      : p.closeness === 'close' ? ((c) => [c - 2, c + 2])(rng.int(-1, 1)) : [-p.range, p.range];
     const direction = p.direction === 'either' ? rng.pick(['asc', 'desc'] as const) : p.direction;
 
     let exprs: Expr[] = [];
@@ -61,7 +66,8 @@ export const orderNumbers: GeneratorDef<OrderParams> = {
       const values = exprs.map(exprValue);
       const distinct = values.every((v, i) => values.findIndex((w) => w.eq(v)) === i);
       const signs = new Set(values.map((v) => v.sign()));
-      if (distinct && (p.count < 3 || (signs.has(-1) && signs.has(1)))) break;
+      const mixedSigns = p.positiveOnly ? !signs.has(-1) && !signs.has(0) : p.count < 3 || (signs.has(-1) && signs.has(1));
+      if (distinct && mixedSigns) break;
     }
 
     const items = exprs.map((expr, i) => ({ id: String.fromCharCode(97 + i), expr }));

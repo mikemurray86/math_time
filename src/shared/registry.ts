@@ -5,10 +5,17 @@ import { compareNumbers } from './generators/compareNumbers.ts';
 import { plotPoint, readPoint } from './generators/coordinates.ts';
 import { distanceSameLine } from './generators/distanceSameLine.ts';
 import { absoluteValue } from './generators/absoluteValue.ts';
+import { divideWhole, multiplyWhole, placeValue } from './generators/wholeNumbers.ts';
+import { decimalFractions, fractionOps } from './generators/fractions4.ts';
+import { areaPerimeter } from './generators/geometry4.ts';
+import { factorsMultiples } from './generators/factors.ts';
 
 // To add a new kind of problem: write a generator in ./generators and list it here.
 export const GENERATORS: Record<string, GeneratorDef<any>> = Object.fromEntries(
-  [orderNumbers, compareNumbers, plotPoint, readPoint, distanceSameLine, absoluteValue].map((g) => [g.id, g]),
+  [
+    orderNumbers, compareNumbers, plotPoint, readPoint, distanceSameLine, absoluteValue,
+    multiplyWhole, divideWhole, placeValue, fractionOps, decimalFractions, areaPerimeter, factorsMultiples,
+  ].map((g) => [g.id, g]),
 );
 
 /** Fill in defaults and clamp anything out of range (params come from the parent UI). */

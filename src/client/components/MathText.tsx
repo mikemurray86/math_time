@@ -1,5 +1,5 @@
 import type { Expr, Rich } from '../../shared/expr.ts';
-import { isNegativeLiteral } from '../../shared/expr.ts';
+import { groupDigits, isNegativeLiteral } from '../../shared/expr.ts';
 
 const MINUS = '−';
 
@@ -15,7 +15,7 @@ function Frac({ n, d }: { n: number; d: number }) {
 export function MathExpr({ e }: { e: Expr }) {
   switch (e.t) {
     case 'int':
-      return <span className="num">{e.v < 0 ? `${MINUS}${-e.v}` : e.v}</span>;
+      return <span className="num">{e.v < 0 ? MINUS : ''}{groupDigits(e.v)}</span>;
     case 'dec':
       return <span className="num">{e.text.replace('-', MINUS)}</span>;
     case 'frac':
@@ -51,7 +51,7 @@ export function MathExpr({ e }: { e: Expr }) {
       return (
         <span className="num">
           <MathExpr e={e.l} />
-          <span className="op">{e.op === '+' ? '+' : MINUS}</span>
+          <span className="op">{e.op === '-' ? MINUS : e.op}</span>
           {paren && '('}
           <MathExpr e={e.r} />
           {paren && ')'}

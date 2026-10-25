@@ -15,24 +15,35 @@ export interface GridSpec {
   style?: NumStyle; // how to write coordinates in the live readout
 }
 
+/** A rectangle drawing; a side is shown as "?" when it's the unknown. */
+export interface RectSpec {
+  w: number;
+  h: number;
+  wLabel: string;
+  hLabel: string;
+}
+
 export type InputSpec =
   | { kind: 'order'; direction: 'asc' | 'desc'; items: { id: string; expr: Expr }[] }
-  | { kind: 'choice'; left: Expr; right: Expr; options: { id: string; label: string }[] }
-  | { kind: 'number'; grid?: GridSpec }
+  | { kind: 'choice'; left?: Expr; right?: Expr; options: { id: string; label: string }[] } // with left/right: a <, =, > sign picker
+  | { kind: 'number'; grid?: GridSpec; rect?: RectSpec }
+  | { kind: 'multi'; fields: string[] } // several numbers, e.g. quotient and remainder
   | { kind: 'pair'; grid: GridSpec }
   | { kind: 'plot'; grid: GridSpec };
 
 export type Answer =
   | { kind: 'order'; ids: string[] }
   | { kind: 'choice'; id: string }
-  | { kind: 'number'; value: string }
-  | { kind: 'pair'; x: string; y: string };
+  | { kind: 'number'; value: string; form?: 'fraction' | 'decimal' } // form: the answer must be written that way
+  | { kind: 'pair'; x: string; y: string }
+  | { kind: 'multi'; values: string[] };
 
 export type Response =
   | { ids: string[] }
   | { id: string }
   | { value: string }
-  | { x: string; y: string };
+  | { x: string; y: string }
+  | { values: string[] };
 
 export interface Question {
   prompt: Rich;

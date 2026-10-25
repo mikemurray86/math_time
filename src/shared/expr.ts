@@ -9,7 +9,7 @@ export type Expr =
   | { t: 'dec'; text: string; v: string }
   | { t: 'abs'; e: Expr }
   | { t: 'neg'; e: Expr }
-  | { t: 'op'; op: '+' | '-'; l: Expr; r: Expr };
+  | { t: 'op'; op: '+' | '-' | '×' | '÷'; l: Expr; r: Expr };
 
 /** A line of text with math mixed in. */
 export type Rich = Array<string | Expr>;
@@ -61,18 +61,23 @@ export function exprValue(e: Expr): Fraction {
       return exprValue(e.e).abs();
     case 'neg':
       return exprValue(e.e).neg();
-    case 'op':
-      return e.op === '+' ? exprValue(e.l).add(exprValue(e.r)) : exprValue(e.l).sub(exprValue(e.r));
+    case 'op': {
+      const [l, r] = [exprValue(e.l), exprValue(e.r)];
+      return e.op === '+' ? l.add(r) : e.op === '-' ? l.sub(r) : e.op === '×' ? l.mul(r) : l.div(r);
+    }
   }
 }
 
 const MINUS = '−';
 
+/** 47382 → "47,382" (four-digit numbers stay plain, as in school: 4382). */
+export const groupDigits = (n: number) => (Math.abs(n) >= 10000 ? Math.abs(n).toLocaleString('en-US') : String(Math.abs(n)));
+
 /** Plain-text rendering, used for aria labels and logs. */
 export function exprText(e: Expr): string {
   switch (e.t) {
     case 'int':
-      return e.v < 0 ? `${MINUS}${-e.v}` : `${e.v}`;
+      return (e.v < 0 ? MINUS : '') + groupDigits(e.v);
     case 'frac':
       return `${e.neg ? MINUS : ''}${e.n}/${e.d}`;
     case 'mixed':
@@ -85,7 +90,7 @@ export function exprText(e: Expr): string {
       return `${MINUS}${exprText(e.e)}`;
     case 'op': {
       const r = exprText(e.r);
-      return `${exprText(e.l)} ${e.op === '+' ? '+' : MINUS} ${isNegativeLiteral(e.r) ? `(${r})` : r}`;
+      return `${exprText(e.l)} ${e.op === '-' ? MINUS : e.op} ${isNegativeLiteral(e.r) ? `(${r})` : r}`;
     }
   }
 }

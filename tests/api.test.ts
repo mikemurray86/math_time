@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pickEntries } from '../src/server/quiz.ts';
 import type { Answer } from '../src/shared/types.ts';
+import { Fraction } from '../src/shared/fraction.ts';
 
 let db: DB;
 let app: Awaited<ReturnType<typeof buildApp>>;
@@ -19,7 +20,7 @@ const cookieOf = (res: { cookies: { name: string; value: string }[] }) => res.co
 beforeEach(async () => {
   db = openDb(':memory:');
   app = await buildApp({ db, pin: '4321', sessionSecret: 'x'.repeat(32) });
-  kidId = createKid(db, 'Shannon', null);
+  kidId = createKid(db, 'Shannon', null, 6);
   kidCookie = cookieOf(await app.inject({ method: 'POST', url: '/api/kid/login', payload: { kidId } }));
 });
 
@@ -29,8 +30,13 @@ const post = (url: string, payload?: object, cookie = kidCookie) =>
 
 const answerFor = (id: number) => JSON.parse(db.prepare('SELECT answer_json FROM quiz_questions WHERE id = ?').get(id)!.answer_json as string) as Answer;
 
-const rightResponse = (a: Answer) =>
-  a.kind === 'order' ? { ids: a.ids } : a.kind === 'choice' ? { id: a.id } : a.kind === 'number' ? { value: a.value } : { x: a.x, y: a.y };
+const rightResponse = (a: Answer) => {
+  if (a.kind === 'order') return { ids: a.ids };
+  if (a.kind === 'choice') return { id: a.id };
+  if (a.kind === 'number') return { value: a.form === 'decimal' ? String(Fraction.parse(a.value)!.toNumber()) : a.value };
+  if (a.kind === 'multi') return { values: a.values };
+  return { x: a.x, y: a.y };
+};
 
 const login = async () => {
   const res = await post('/api/parent/login', { pin: '4321' }, '');
@@ -84,6 +90,26 @@ describe('kid flow', () => {
 
     const me = (await app.inject({ url: '/api/me', headers: { cookie: kidCookie } })).json();
     expect(me.stars).toBe(fin.totalStars);
+  });
+
+  it('lets her review her own quiz only after finishing it', async () => {
+    const quiz = (await post('/api/quiz')).json();
+    const review = (cookie = kidCookie) => app.inject({ url: `/api/quiz/${quiz.quizId}/review`, headers: { cookie } });
+    expect((await review()).statusCode).toBe(409); // no peeking at answers mid-quiz
+    const q = quiz.questions[0];
+    await post(`/api/quiz/${quiz.quizId}/answer`, { questionId: q.id, response: rightResponse(answerFor(q.id)) });
+    const fin = (await post(`/api/quiz/${quiz.quizId}/finish`, { localDate: '2026-10-24' })).json();
+    expect(fin.quizId).toBe(quiz.quizId);
+    const body = (await review()).json();
+    expect(body.questions).toHaveLength(10);
+    expect(body.questions[0]).toMatchObject({ correctFirst: 1, correctFinal: 1 });
+    expect(body.questions[0].question.explanation.length).toBeGreaterThan(0);
+    expect(body.questions[1]).toMatchObject({ first: null, correctFirst: 0 }); // skipped
+
+    const cookie = await login();
+    const leo = (await post('/api/parent/kids', { name: 'Leo' }, cookie)).json().id;
+    const leoCookie = cookieOf(await post('/api/kid/login', { kidId: leo }, ''));
+    expect((await review(leoCookie)).statusCode).toBe(404);
   });
 
   it('only lets her wear items she owns', async () => {
@@ -200,6 +226,32 @@ describe('multiple children', () => {
     expect((await app.inject('/api/kids')).json().find((k: { id: number }) => k.id === id).codeLength).toBe(0);
   });
 
+  it('starts a new child with their grade’s question set', async () => {
+    const cookie = await login();
+    const get = (url: string) => app.inject({ url, headers: { cookie } }).then((r) => r.json());
+    expect((await get('/api/parent/grade-sets')).map((g: { grade: number }) => g.grade)).toEqual([4, 6]);
+
+    const ava = (await post('/api/parent/kids', { name: 'Ava', grade: 4 }, cookie)).json().id;
+    const bank = await get(`/api/parent/bank?kid=${ava}`);
+    expect(bank.map((b: { generator: string }) => b.generator)).toContain('divideWhole');
+    expect(bank.map((b: { generator: string }) => b.generator)).not.toContain('plotPoint');
+    expect((await get('/api/parent/kids')).find((k: { id: number }) => k.id === ava).grade).toBe(4);
+    expect((await post('/api/parent/kids', { name: 'X', grade: 9 }, cookie)).statusCode).toBe(400);
+
+    // a 4th grader's quiz has no negative numbers anywhere
+    const avaCookie = cookieOf(await post('/api/kid/login', { kidId: ava }, ''));
+    const quiz = (await post('/api/quiz', {}, avaCookie)).json();
+    expect(JSON.stringify(quiz)).not.toMatch(/"neg":true|"v":-|"text":"-/);
+
+    // add the 6th grade set later, and change the grade without touching the bank
+    await post('/api/parent/bank/grade-set', { kidId: ava, grade: 6 }, cookie);
+    const bigger = await get(`/api/parent/bank?kid=${ava}`);
+    expect(bigger.length).toBeGreaterThan(bank.length);
+    expect(bigger.map((b: { generator: string }) => b.generator)).toContain('plotPoint');
+    await app.inject({ method: 'PUT', url: `/api/parent/kids/${ava}`, headers: { cookie }, payload: { grade: 6 } });
+    expect((await get(`/api/parent/bank?kid=${ava}`)).length).toBe(bigger.length);
+  });
+
   it('lets parents add and remove stars, never below zero', async () => {
     const cookie = await login();
     const stars = (delta: unknown, c = cookie) => app.inject({ method: 'POST', url: `/api/parent/kids/${kidId}/stars`, headers: { cookie: c }, payload: { delta } });
@@ -274,6 +326,7 @@ describe('migration to multiple children', () => {
     // what she was already wearing counts as bought, and old stars count as earned
     expect(db2.prepare('SELECT item_id FROM kid_items ORDER BY item_id').all().map((r) => r.item_id)).toEqual(expect.arrayContaining(['color-peach', 'hhat-top']));
     expect(kids[0].stars_earned).toBe(12);
+    expect(kids[0].grade).toBe(6);
     expect(db2.prepare('SELECT kid_id FROM bank_entries').get()!.kid_id).toBe(kids[0].id);
     expect(db2.prepare('SELECT kid_id FROM quizzes').get()!.kid_id).toBe(kids[0].id);
     expect(db2.prepare('SELECT code FROM kid_badges').all()).toEqual([{ code: 'first_quiz' }]);

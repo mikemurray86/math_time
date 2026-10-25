@@ -178,7 +178,8 @@ function Editor({ kidId, kidName, draft, catalog, onCancel, onSaved }: { kidId: 
 }
 
 export function Bank() {
-  const { kid, kids } = useParent();
+  const { kid, kids, grades } = useParent();
+  const [addGrade, setAddGrade] = useState(0);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [catalog, setCatalog] = useState<GenInfo[]>([]);
   const [editing, setEditing] = useState<Draft | null>(null);
@@ -231,6 +232,26 @@ export function Bank() {
           }}
         >
           + Add question
+        </button>
+      </div>
+      <div className="grade-set-row">
+        <select value={addGrade} onChange={(e) => setAddGrade(Number(e.target.value))} aria-label="Grade set to add">
+          <option value={0}>Add a grade set…</option>
+          {grades.map((g) => <option key={g.grade} value={g.grade}>{g.label} ({g.count} question types)</option>)}
+        </select>
+        <button
+          type="button"
+          className="btn small"
+          disabled={!addGrade}
+          onClick={async () => {
+            const g = grades.find((x) => x.grade === addGrade)!;
+            if (!confirm(`Add the ${g.count} ${g.label} question types to ${kid.name}’s bank?`)) return;
+            await api('POST', '/api/parent/bank/grade-set', { kidId: kid.id, grade: addGrade });
+            setAddGrade(0);
+            void load();
+          }}
+        >
+          Add
         </button>
       </div>
       {copied && <p className="good" role="status">{copied}</p>}

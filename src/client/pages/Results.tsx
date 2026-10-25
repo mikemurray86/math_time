@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { api } from '../api.ts';
+import { ReviewCard, type ReviewQ } from '../components/ReviewCard.tsx';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import type { QuizResult } from './Quiz.tsx';
 import { BADGES } from '../../shared/rewards.ts';
@@ -11,6 +13,8 @@ export function Results() {
   const result = useLocation().state as QuizResult | null;
   const [shownStars, setShownStars] = useState(0);
   const crazy = useCrazyFx();
+  const [review, setReview] = useState<ReviewQ[] | null>(null);
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     if (!result) return;
@@ -71,6 +75,32 @@ export function Results() {
           </ul>
         </section>
       )}
+
+      <section className="card review-intro">
+        <h2>Review my answers</h2>
+        <p className="muted">See every question, what you answered, and how to solve the ones you missed.</p>
+        <button
+          type="button"
+          className="btn"
+          onClick={async () => {
+            if (!review) setReview((await api<{ questions: ReviewQ[] }>('GET', `/api/quiz/${result.quizId}/review`)).questions);
+            setShowReview(!showReview);
+          }}
+        >
+          {showReview ? 'Hide my answers' : '🔍 Show my answers'}
+        </button>
+      </section>
+      {showReview &&
+        review?.map((r, i) => (
+          <ReviewCard
+            key={r.id}
+            r={r}
+            index={i}
+            meta={r.correctFirst ? '⭐⭐' : r.correctFinal ? '⭐' : ''}
+            explainLabel="How to solve it"
+            explainOpen={!r.correctFirst}
+          />
+        ))}
 
       <div className="action-bar two">
         <Link to="/" className="btn btn-big">Home</Link>

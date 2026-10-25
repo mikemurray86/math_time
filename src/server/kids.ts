@@ -1,12 +1,13 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { tx, type DB } from './db.ts';
-import { seedBank } from './seed.ts';
+import { DEFAULT_GRADE, GRADE_SETS, seedBank } from './seed.ts';
 import { AVATAR_ITEMS, DEFAULT_AVATAR, upgradeAvatar, type Avatar, type AvatarItem } from '../shared/rewards.ts';
 import { isValidCode } from '../shared/pictures.ts';
 
 export interface Kid {
   id: number;
   name: string;
+  grade: number | null;
   codeLength: number; // 0 = no picture code
   avatar: Avatar;
   stars: number; // spendable balance
@@ -19,6 +20,7 @@ export interface Kid {
 const toKid = (r: Record<string, unknown>): Kid => ({
   id: r.id as number,
   name: r.name as string,
+  grade: (r.grade as number | null) ?? null,
   codeLength: r.code_hash ? (r.code_length as number) : 0,
   avatar: { ...DEFAULT_AVATAR, ...upgradeAvatar(JSON.parse(r.avatar_json as string)) },
   stars: r.stars as number,
@@ -49,10 +51,12 @@ export function setCode(db: DB, id: number, code: number[] | null) {
   db.prepare('UPDATE kids SET code_hash = ?, code_length = ? WHERE id = ?').run(code ? hashCode(id, code) : null, code?.length ?? 0, id);
 }
 
-/** New child, starting from the starter bank or a copy of a sibling's bank. */
-export function createKid(db: DB, name: string, code: number[] | null, copyBankFrom?: number): number {
+export const validGrade = (g: unknown): number | null => (GRADE_SETS[Number(g)] ? Number(g) : null);
+
+/** New child, starting from their grade's question set or a copy of a sibling's bank. */
+export function createKid(db: DB, name: string, code: number[] | null, grade: number = DEFAULT_GRADE, copyBankFrom?: number): number {
   return tx(db, () => {
-    const id = Number(db.prepare('INSERT INTO kids (name) VALUES (?)').run(name).lastInsertRowid);
+    const id = Number(db.prepare('INSERT INTO kids (name, grade) VALUES (?, ?)').run(name, grade).lastInsertRowid);
     // Alternate the free colors so siblings look different on the picker.
     saveAvatar(db, id, { ...DEFAULT_AVATAR, color: id % 2 ? 'color-sky' : 'color-mint' });
     setCode(db, id, code);
@@ -62,7 +66,7 @@ export function createKid(db: DB, name: string, code: number[] | null, copyBankF
          SELECT ?, generator, params_json, label, note, weight, enabled FROM bank_entries WHERE kid_id = ? ORDER BY id`,
       ).run(id, copyBankFrom);
     } else {
-      seedBank(db, id);
+      seedBank(db, id, grade);
     }
     return id;
   });

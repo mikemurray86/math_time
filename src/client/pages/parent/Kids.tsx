@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api } from '../../api.ts';
 import { AvatarView } from '../../components/AvatarView.tsx';
 import { CODE_MAX, CODE_MIN, PICTURES } from '../../../shared/pictures.ts';
-import { useParent, type ParentKid } from './ParentLayout.tsx';
+import { useParent, type GradeSet, type ParentKid } from './ParentLayout.tsx';
 import { fmtWhen } from './format.ts';
 
 /** Pick a picture code; the parent sees it while choosing it, since they set it for the child. */
@@ -35,14 +35,17 @@ function CodePicker({ code, onChange }: { code: number[]; onChange: (c: number[]
 
 const codeOk = (c: number[]) => c.length === 0 || c.length >= CODE_MIN;
 
-function AddKid({ kids, onDone }: { kids: ParentKid[]; onDone: () => void }) {
+const gradeName = (grades: GradeSet[], g: number | null) => grades.find((x) => x.grade === g)?.label ?? (g ? `Grade ${g}` : 'No grade set');
+
+function AddKid({ kids, grades, onDone }: { kids: ParentKid[]; grades: GradeSet[]; onDone: () => void }) {
   const [name, setName] = useState('');
   const [code, setCode] = useState<number[]>([]);
+  const [grade, setGrade] = useState(grades[grades.length - 1]?.grade ?? 6);
   const [copyFrom, setCopyFrom] = useState(0);
   const [error, setError] = useState('');
   const save = async () => {
     try {
-      await api('POST', '/api/parent/kids', { name, code: code.length ? code : null, copyBankFrom: copyFrom || undefined });
+      await api('POST', '/api/parent/kids', { name, grade, code: code.length ? code : null, copyBankFrom: copyFrom || undefined });
       onDone();
     } catch (e) {
       setError((e as Error).message);
@@ -60,9 +63,15 @@ function AddKid({ kids, onDone }: { kids: ParentKid[]; onDone: () => void }) {
         <CodePicker code={code} onChange={setCode} />
       </div>
       <div className="field">
+        <label htmlFor="kid-grade">Grade</label>
+        <select id="kid-grade" value={grade} onChange={(e) => setGrade(Number(e.target.value))}>
+          {grades.map((g) => <option key={g.grade} value={g.grade}>{g.label}</option>)}
+        </select>
+      </div>
+      <div className="field">
         <label htmlFor="kid-bank">Start their question bank with</label>
         <select id="kid-bank" value={copyFrom} onChange={(e) => setCopyFrom(Number(e.target.value))}>
-          <option value={0}>The starter questions</option>
+          <option value={0}>{gradeName(grades, grade)} questions ({grades.find((g) => g.grade === grade)?.count ?? 0} question types)</option>
           {kids.map((k) => <option key={k.id} value={k.id}>A copy of {k.name}’s bank</option>)}
         </select>
       </div>
@@ -75,15 +84,16 @@ function AddKid({ kids, onDone }: { kids: ParentKid[]; onDone: () => void }) {
   );
 }
 
-function KidCard({ kid, onChanged }: { kid: ParentKid; onChanged: () => void }) {
+function KidCard({ kid, grades, onChanged }: { kid: ParentKid; grades: GradeSet[]; onChanged: () => void }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(kid.name);
+  const [grade, setGrade] = useState(kid.grade ?? grades[grades.length - 1]?.grade ?? 6);
   const [code, setCode] = useState<number[] | null>(null); // null = leave the code alone
   const [error, setError] = useState('');
 
   const save = async () => {
     try {
-      await api('PUT', `/api/parent/kids/${kid.id}`, { name, ...(code ? { code: code.length ? code : null } : {}) });
+      await api('PUT', `/api/parent/kids/${kid.id}`, { name, grade, ...(code ? { code: code.length ? code : null } : {}) });
       setEditing(false);
       setCode(null);
       onChanged();
@@ -110,7 +120,7 @@ function KidCard({ kid, onChanged }: { kid: ParentKid; onChanged: () => void }) 
       <div className="kid-row">
         <AvatarView avatar={kid.avatar} size={64} />
         <div className="kid-info">
-          <strong>{kid.name}</strong>
+          <strong>{kid.name} <span className="grade-tag">{gradeName(grades, kid.grade)}</span></strong>
           <span className="muted">
             ⭐ {stars} · 🔥 {kid.streak} · {kid.quizzes} quiz{kid.quizzes === 1 ? '' : 'zes'}
             {kid.lastQuiz && ` · last ${fmtWhen(kid.lastQuiz)}`}
@@ -136,6 +146,13 @@ function KidCard({ kid, onChanged }: { kid: ParentKid; onChanged: () => void }) 
             <input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="field">
+            <label>Grade</label>
+            <select value={grade} onChange={(e) => setGrade(Number(e.target.value))}>
+              {grades.map((g) => <option key={g.grade} value={g.grade}>{g.label}</option>)}
+            </select>
+            <p className="muted">Changing the grade doesn’t change their question bank. Use “Add a grade set” on the Question bank page for that.</p>
+          </div>
+          <div className="field">
             <label>Picture code</label>
             {code === null ? (
               <div className="action-row left">
@@ -159,7 +176,7 @@ function KidCard({ kid, onChanged }: { kid: ParentKid; onChanged: () => void }) 
 }
 
 export function Kids() {
-  const { kids, reloadKids } = useParent();
+  const { kids, grades, reloadKids } = useParent();
   const [adding, setAdding] = useState(false);
   return (
     <div className="parent-body">
@@ -170,9 +187,9 @@ export function Kids() {
         </div>
         {!adding && <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}>+ Add child</button>}
       </div>
-      {adding && <AddKid kids={kids} onDone={() => { setAdding(false); void reloadKids(); }} />}
+      {adding && grades.length > 0 && <AddKid kids={kids} grades={grades} onDone={() => { setAdding(false); void reloadKids(); }} />}
       <ul className="bank-list">
-        {kids.map((k) => <KidCard key={k.id} kid={k} onChanged={reloadKids} />)}
+        {kids.map((k) => <KidCard key={k.id} kid={k} grades={grades} onChanged={reloadKids} />)}
       </ul>
     </div>
   );

@@ -29,6 +29,7 @@ interface Feedback {
 }
 
 export interface QuizResult {
+  quizId: number;
   score: number;
   total: number;
   stars: number;
@@ -43,7 +44,7 @@ const pick = (a: string[]) => a[Math.floor(Math.random() * a.length)];
 
 /** Number-line range covering the question's numbers, always including 0. */
 function numberLineFor(input: InputSpec) {
-  const exprs = input.kind === 'order' ? input.items.map((i) => i.expr) : input.kind === 'choice' ? [input.left, input.right] : null;
+  const exprs = input.kind === 'order' ? input.items.map((i) => i.expr) : input.kind === 'choice' && input.left && input.right ? [input.left, input.right] : null;
   if (!exprs) return undefined;
   const vals = exprs.map((e) => exprValue(e).toNumber());
   return { min: Math.min(-1, Math.floor(Math.min(...vals)) - 1), max: Math.max(1, Math.ceil(Math.max(...vals)) + 1) };
@@ -184,7 +185,7 @@ export function Quiz() {
         </section>
       )}
 
-      <ScratchPad key={q.id} numberLine={numberLineFor(q.input)} />
+      <ScratchPad key={`scratch-${q.id}`} numberLine={numberLineFor(q.input)} />
       {crazy.overlay}
 
       <div className="action-bar">

@@ -8,6 +8,7 @@ import { load, save } from '../../storage.ts';
 export interface ParentKid {
   id: number;
   name: string;
+  grade: number | null;
   codeLength: number;
   avatar: Avatar;
   stars: number;
@@ -18,7 +19,14 @@ export interface ParentKid {
   lastQuiz: string | null;
 }
 
+export interface GradeSet {
+  grade: number;
+  label: string;
+  count: number;
+}
+
 interface ParentCtx {
+  grades: GradeSet[];
   kids: ParentKid[];
   kid: ParentKid | null; // the child the dashboard and bank are showing
   reloadKids: () => Promise<void>;
@@ -29,6 +37,7 @@ export const useParent = () => useOutletContext<ParentCtx>();
 export function ParentLayout() {
   const [parent, setParent] = useState<boolean | null>(null);
   const [kids, setKids] = useState<ParentKid[]>([]);
+  const [grades, setGrades] = useState<GradeSet[]>([]);
   const [kidId, setKidId] = useState<number | null>(() => load('mt-parent-kid', null));
   const { pathname } = useLocation();
 
@@ -37,7 +46,9 @@ export function ParentLayout() {
     api<{ parent: boolean }>('GET', '/api/parent/session').then((s) => setParent(s.parent)).catch(() => setParent(false));
   }, []);
   useEffect(() => {
-    if (parent) void reloadKids();
+    if (!parent) return;
+    void reloadKids();
+    api<GradeSet[]>('GET', '/api/parent/grade-sets').then(setGrades);
   }, [parent, reloadKids]);
 
   if (parent === null) return <main className="page parent"><div className="loading">Loading…</div></main>;
@@ -89,7 +100,7 @@ export function ParentLayout() {
           <Link className="btn btn-primary" to="/parent/kids">Add a child</Link>
         </section>
       ) : (
-        <Outlet context={{ kids, kid, reloadKids } satisfies ParentCtx} />
+        <Outlet context={{ grades, kids, kid, reloadKids } satisfies ParentCtx} />
       )}
     </main>
   );

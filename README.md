@@ -10,7 +10,10 @@ A mobile-friendly math practice site for a 6th grader. A parent picks problem te
 - **Review**: every question is stored with its seed, so the parent review rebuilds exactly what the child saw, along with their first and second tries.
 - **Multiple children**: each child has their own question bank, stars, streak, badges, avatar and history. Children pick themselves on the "Who's practicing?" screen, using an optional picture code that a parent sets on the Kids page. The parent dashboard and bank have a child switcher.
 
-Starter problem types: ordering numbers (negatives, fractions, improper fractions, mixed numbers, decimals, `|x|`), comparing two numbers, plotting points and reading coordinates (whole, ½, ¼, ⅓ or 0.1 steps, written as fractions, mixed numbers or decimals), distance between points on the same horizontal or vertical line, and absolute-value expressions.
+Problem types, grouped into grade-level sets (`GRADE_SETS` in `src/server/seed.ts`). A new child's bank starts from their grade's set, and a parent can add another grade's set from the Bank page.
+
+- **4th grade:** multi-digit multiplication, long division with remainders, place value and rounding, equivalent fractions, adding and subtracting with like denominators, whole number × fraction, decimals ↔ fractions, comparing positive fractions and decimals, rectangle area and perimeter, and factors, multiples and primes.
+- **6th grade:** ordering and comparing numbers (negatives, fractions, decimals, `|x|`), plotting and reading coordinates (whole, ½, ¼, ⅓ or 0.1 steps), distance on a grid, and absolute-value expressions.
 
 ### Adding a problem type
 

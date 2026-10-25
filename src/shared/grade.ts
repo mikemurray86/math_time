@@ -19,7 +19,13 @@ export function grade(answer: Answer, response: unknown): boolean {
     case 'choice':
       return r.id === answer.id;
     case 'number':
+      if (answer.form === 'fraction' && !String(r.value ?? '').includes('/')) return false;
+      if (answer.form === 'decimal' && String(r.value ?? '').includes('/')) return false;
       return same(r.value, answer.value);
+    case 'multi': {
+      const vals = r.values;
+      return Array.isArray(vals) && vals.length === answer.values.length && answer.values.every((v, i) => same(vals[i], v));
+    }
     case 'pair':
       return same(r.x, answer.x) && same(r.y, answer.y);
   }

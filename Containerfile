@@ -20,7 +20,7 @@ COPY src/shared ./src/shared
 COPY --from=build /app/dist ./dist
 # /data is a volume; the NFS export squashes every user to one UID, so never chown at runtime.
 RUN mkdir -p /data && chown node:node /data
-USER node
+USER 1000:1000
 EXPOSE 8080
 VOLUME /data
 CMD ["node", "src/server/index.ts"]

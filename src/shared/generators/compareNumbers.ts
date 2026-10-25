@@ -8,6 +8,7 @@ export interface CompareParams {
   range: number;
   maxDen: number;
   allowEqual: boolean;
+  positiveOnly: boolean;
 }
 
 export const compareNumbers: GeneratorDef<CompareParams> = {
@@ -15,20 +16,23 @@ export const compareNumbers: GeneratorDef<CompareParams> = {
   name: 'Compare two numbers',
   skill: 'Ordering numbers',
   description: 'Choose <, > or = between two numbers written in different ways.',
-  defaults: { forms: ['integer', 'improper', 'decimal', 'abs'], range: 5, maxDen: 8, allowEqual: true },
+  defaults: { forms: ['integer', 'improper', 'decimal', 'abs'], range: 5, maxDen: 8, allowEqual: true, positiveOnly: false },
   fields: [
     { key: 'forms', label: 'Kinds of numbers', type: 'multi', options: numberFormOptions },
     { key: 'range', label: 'Largest size (±)', type: 'int', min: 2, max: 20 },
     { key: 'maxDen', label: 'Largest denominator', type: 'int', min: 2, max: 12 },
     { key: 'allowEqual', label: 'Sometimes make them equal', type: 'bool' },
+    { key: 'positiveOnly', label: 'Positive numbers only (no negatives)', type: 'bool' },
   ],
   presets: [
-    { id: 'mixed-forms', label: 'Mixed forms incl. absolute value', params: { forms: ['integer', 'improper', 'decimal', 'abs'], range: 5, maxDen: 8, allowEqual: true } },
-    { id: 'fractions', label: 'Fractions vs decimals', params: { forms: ['fraction', 'improper', 'mixed', 'decimal'], range: 3, maxDen: 8, allowEqual: true } },
+    { id: 'mixed-forms', label: 'Mixed forms incl. absolute value', params: { forms: ['integer', 'improper', 'decimal', 'abs'], range: 5, maxDen: 8, allowEqual: true, positiveOnly: false } },
+    { id: 'positive-fractions', label: 'Fractions with different denominators, no negatives', params: { forms: ['fraction', 'mixed', 'decimal'], range: 3, maxDen: 12, allowEqual: true, positiveOnly: true } },
+    { id: 'fractions', label: 'Fractions vs decimals', params: { forms: ['fraction', 'improper', 'mixed', 'decimal'], range: 3, maxDen: 8, allowEqual: true, positiveOnly: false } },
   ],
   generate(p, rng) {
     const forms = p.forms.length ? p.forms : (['integer'] as NumberForm[]);
-    const left = makeNumber(rng, rng.pick(forms), -p.range, p.range, p.maxDen);
+    const lo = p.positiveOnly ? 0 : -p.range;
+    const left = makeNumber(rng, rng.pick(forms), lo, p.range, p.maxDen);
     let right: Expr;
     const lv = exprValue(left);
     if (p.allowEqual && rng.bool(0.2)) {
@@ -40,11 +44,13 @@ export const compareNumbers: GeneratorDef<CompareParams> = {
       } else {
         const looks = (['fraction', 'mixed', 'decimal'] as const)
           .map((s) => toExpr(lv, s))
-          .filter((e) => JSON.stringify(e) !== JSON.stringify(left));
+          .filter((e) => JSON.stringify(e) !== JSON.stringify(left))
+          // younger grades only use tenths and hundredths as decimals
+          .filter((e) => !(p.positiveOnly && e.t === 'dec' && 100 % lv.d !== 0));
         right = looks.length ? rng.pick(looks) : { t: 'abs', e: toExpr(lv.neg()) };
       }
     } else {
-      do right = makeNumber(rng, rng.pick(forms), -p.range, p.range, p.maxDen);
+      do right = makeNumber(rng, rng.pick(forms), lo, p.range, p.maxDen);
       while (exprValue(right).eq(lv));
     }
     const rv = exprValue(right);

@@ -1,8 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { kvSet, type DB } from '../db.ts';
 import type { Auth } from '../auth.ts';
-import { createKid, getKid, listKids, setCode } from '../kids.ts';
-import { DEFAULT_SETTINGS, getSettings, HttpError, type Settings } from '../quiz.ts';
+import { createKid, getKid, listKids, setCode, validGrade } from '../kids.ts';
+import { DEFAULT_GRADE, gradeSetList, seedBank } from '../seed.ts';
+import { DEFAULT_SETTINGS, getSettings, HttpError, quizReview, type Settings } from '../quiz.ts';
 import { GENERATORS, buildQuestion, generatorCatalog, sanitizeParams } from '../../shared/registry.ts';
 import { randomSeed } from '../../shared/rng.ts';
 import { isValidCode } from '../../shared/pictures.ts';
@@ -20,6 +21,7 @@ interface BankBody {
 interface KidBody {
   name?: string;
   code?: number[] | null; // null clears the picture code
+  grade?: number;
   copyBankFrom?: number;
 }
 
@@ -79,7 +81,9 @@ export function parentRoutes(app: FastifyInstance, db: DB, auth: Auth) {
       const name = str(req.body?.name, 40);
       if (!name) throw new HttpError(400, 'Name is required');
       const copyFrom = req.body?.copyBankFrom ? kidParam(req.body.copyBankFrom).id : undefined;
-      return { id: createKid(db, name, validCode(req.body?.code), copyFrom) };
+      const grade = req.body?.grade === undefined ? DEFAULT_GRADE : validGrade(req.body.grade);
+      if (!grade) throw new HttpError(400, 'Unknown grade');
+      return { id: createKid(db, name, validCode(req.body?.code), grade, copyFrom) };
     });
 
     p.put<{ Params: { id: string }; Body: KidBody }>('/api/parent/kids/:id', async (req) => {
@@ -90,6 +94,11 @@ export function parentRoutes(app: FastifyInstance, db: DB, auth: Auth) {
         db.prepare('UPDATE kids SET name = ? WHERE id = ?').run(name, kid.id);
       }
       if (req.body?.code !== undefined) setCode(db, kid.id, validCode(req.body.code));
+      if (req.body?.grade !== undefined) {
+        const grade = validGrade(req.body.grade);
+        if (!grade) throw new HttpError(400, 'Unknown grade');
+        db.prepare('UPDATE kids SET grade = ? WHERE id = ?').run(grade, kid.id); // the bank stays as it is
+      }
       return getKid(db, kid.id);
     });
 
@@ -143,28 +152,24 @@ export function parentRoutes(app: FastifyInstance, db: DB, auth: Auth) {
     p.get<{ Params: { id: string } }>('/api/parent/quiz/:id', async (req) => {
       const quiz = db.prepare('SELECT * FROM quizzes WHERE id = ?').get(Number(req.params.id));
       if (!quiz) throw new HttpError(404, 'Quiz not found');
-      const rows = db
-        .prepare(
-          `SELECT q.*, b.label FROM quiz_questions q LEFT JOIN bank_entries b ON b.id = q.bank_entry_id
-           WHERE q.quiz_id = ? ORDER BY q.position`,
-        )
-        .all(quiz.id);
-      const questions = rows.map((r) => ({
-        id: r.id,
-        label: r.label ?? GENERATORS[r.generator as string]?.name ?? r.generator,
-        question: buildQuestion(r.generator as string, JSON.parse(r.params_json as string), r.seed as number),
-        first: r.first_answer_json ? JSON.parse(r.first_answer_json as string) : null,
-        retry: r.retry_answer_json ? JSON.parse(r.retry_answer_json as string) : null,
-        correctFirst: r.correct_first,
-        correctFinal: r.correct_final,
-        timeMs: r.time_ms,
-      }));
+      const questions = quizReview(db, quiz.id as number);
       return { quiz, kid: getKid(db, quiz.kid_id as number), questions };
     });
 
     // ---- question banks ----
 
     p.get('/api/parent/generators', async () => generatorCatalog());
+
+    p.get('/api/parent/grade-sets', async () => gradeSetList());
+
+    // Append a whole grade's question set to a child's bank.
+    p.post<{ Body: { kidId?: number; grade?: number } }>('/api/parent/bank/grade-set', async (req) => {
+      const kid = kidParam(req.body?.kidId);
+      const grade = validGrade(req.body?.grade);
+      if (!grade) throw new HttpError(400, 'Unknown grade');
+      seedBank(db, kid.id, grade);
+      return { ok: true };
+    });
 
     p.post<{ Body: { generator: string; params: unknown } }>('/api/parent/preview', async (req) => {
       const gen = GENERATORS[req.body?.generator];

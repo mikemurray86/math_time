@@ -488,3 +488,14 @@ body.crazy-shake .page { animation: crazy-shake 0.6s; }
   .star-adjust-label { display: none; }
   .star-adjust-count { min-width: 52px; font-size: 1rem; }
 }
+
+/* ---- 4th grade inputs ---- */
+.choice-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.choice-btn.wide { width: 100%; height: 64px; font-size: 1.4rem; }
+.multi { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rect-figure { width: 100%; max-width: 380px; height: auto; margin: 0 auto; display: block; }
+.rect-shape { fill: var(--purple-soft); stroke: var(--purple); stroke-width: 3; }
+.rect-label { fill: var(--ink); font-size: 18px; font-weight: 800; font-family: inherit; }
+.grade-tag { font-size: 0.75rem; font-weight: 800; background: var(--purple-soft); color: var(--purple-dark); border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }
+.grade-set-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grade-set-row select { padding: 8px 10px; border-radius: 12px; border: 2px solid var(--line); background: #fff; min-height: 42px; }

@@ -207,3 +207,25 @@ export function finishQuiz(db: DB, kidId: number, quizId: number, localDate: unk
     return { score, total: qs.length, stars, newBadges, streak: r.streak, totalStars: r.stars };
   });
 }
+
+// ---- review ---------------------------------------------------------------
+
+/** Every question of a quiz, rebuilt from its seed, with the child's answers. */
+export function quizReview(db: DB, quizId: number) {
+  const rows = db
+    .prepare(
+      `SELECT q.*, b.label FROM quiz_questions q LEFT JOIN bank_entries b ON b.id = q.bank_entry_id
+       WHERE q.quiz_id = ? ORDER BY q.position`,
+    )
+    .all(quizId);
+  return rows.map((r) => ({
+    id: r.id,
+    label: r.label ?? GENERATORS[r.generator as string]?.name ?? r.generator,
+    question: buildQuestion(r.generator as string, JSON.parse(r.params_json as string), r.seed as number),
+    first: r.first_answer_json ? JSON.parse(r.first_answer_json as string) : null,
+    retry: r.retry_answer_json ? JSON.parse(r.retry_answer_json as string) : null,
+    correctFirst: r.correct_first,
+    correctFinal: r.correct_final,
+    timeMs: r.time_ms,
+  }));
+}

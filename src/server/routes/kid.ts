@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { DB } from '../db.ts';
 import type { Auth } from '../auth.ts';
 import { buyItem, checkCode, getKid, listKids, ownedItems, owns, saveAvatar } from '../kids.ts';
-import { answerQuestion, createQuiz, finishQuiz, HttpError } from '../quiz.ts';
+import { answerQuestion, createQuiz, finishQuiz, HttpError, quizReview } from '../quiz.ts';
 import { AVATAR_ITEMS, type Avatar, type Slot } from '../../shared/rewards.ts';
 
 export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
@@ -76,7 +76,16 @@ export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
     answerQuestion(db, currentKid(req).id, Number(req.params.id), Number(req.body?.questionId), req.body?.response, req.body?.timeMs),
   );
 
-  app.post<{ Params: { id: string }; Body: { localDate?: string } }>('/api/quiz/:id/finish', async (req) =>
-    finishQuiz(db, currentKid(req).id, Number(req.params.id), req.body?.localDate),
-  );
+  app.post<{ Params: { id: string }; Body: { localDate?: string } }>('/api/quiz/:id/finish', async (req) => ({
+    quizId: Number(req.params.id),
+    ...finishQuiz(db, currentKid(req).id, Number(req.params.id), req.body?.localDate),
+  }));
+
+  // Answers and explanations, but only for the child's own quiz once it's finished.
+  app.get<{ Params: { id: string } }>('/api/quiz/:id/review', async (req) => {
+    const quiz = db.prepare('SELECT id, finished_at FROM quizzes WHERE id = ? AND kid_id = ?').get(Number(req.params.id), currentKid(req).id);
+    if (!quiz) throw new HttpError(404, 'Quiz not found');
+    if (!quiz.finished_at) throw new HttpError(409, 'Finish the quiz first!');
+    return { questions: quizReview(db, quiz.id as number) };
+  });
 }

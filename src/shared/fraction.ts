@@ -81,6 +81,7 @@ export class Fraction {
     let s = raw.trim().replace(/[−–—]/g, '-');
     for (const [ch, rep] of Object.entries(VULGAR)) s = s.replaceAll(ch, rep);
     s = s.replace(/\s+/g, ' ').replace(/^([+-]) /, '$1').trim();
+    while (/\d,\d{3}(?!\d)/.test(s)) s = s.replace(/(\d),(\d{3})(?!\d)/, '$1$2'); // 47,382
     if (s.length === 0 || s.length > 24) return null;
     let m: RegExpMatchArray | null;
     try {
