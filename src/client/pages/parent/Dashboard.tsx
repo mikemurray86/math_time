@@ -1,15 +1,69 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api.ts';
-import { BADGES } from '../../../shared/rewards.ts';
+import { AVATAR_ITEMS, BADGES, DEFAULT_AVATAR, SEASONS, helperName, type Avatar, type Slot } from '../../../shared/rewards.ts';
+import { AvatarView } from '../../components/AvatarView.tsx';
+import { Helper } from '../../components/Mascot.tsx';
 import { fmtDuration, fmtWhen, level, pct } from './format.ts';
 import { useParent } from './ParentLayout.tsx';
 
 interface Dash {
   quizzes: { id: number; finished_at: string; local_date: string; score: number; total: number; stars_earned: number; time_ms: number | null }[];
   entryStats: { id: number; label: string; skill: string; enabled: number; attempts: number; first_right: number | null; final_right: number | null; avg_ms: number | null }[];
-  kid: { id: number; name: string; stars: number; streak: number; bestStreak: number };
+  kid: { id: number; name: string; stars: number; streak: number; bestStreak: number; avatar: Avatar };
   badges: { code: string; earned_at: string }[];
+  purchases: { item_id: string; bought_at: string }[];
+  challenge: import('../../api.ts').ChallengeInfo;
+}
+
+const SLOT_NAMES: Record<Slot, string> = {
+  color: 'Avatar color',
+  hat: 'Avatar hat',
+  face: 'Avatar face',
+  extra: 'Avatar extra',
+  helper: 'Math helper',
+  helperFur: 'Helper fur',
+  helperHat: 'Helper hat',
+  helperExtra: 'Helper extra',
+  mode: 'Celebration mode',
+};
+
+function Purchases({ kid, purchases }: Pick<Dash, 'kid' | 'purchases'>) {
+  const avatar = { ...DEFAULT_AVATAR, ...kid.avatar };
+  const rows = purchases.flatMap((p) => {
+    const item = AVATAR_ITEMS.find((i) => i.id === p.item_id);
+    return item ? [{ ...p, item, season: SEASONS.find((s) => s.id === item.season) }] : [];
+  });
+  const spent = rows.reduce((s, r) => s + r.item.stars, 0);
+  return (
+    <section className="card">
+      <h2>{kid.name}’s Star Store</h2>
+      <div className="store-looks">
+        <figure><AvatarView avatar={avatar} size={90} /><figcaption>{kid.name}</figcaption></figure>
+        <figure><Helper look={avatar} size={90} /><figcaption>{helperName(avatar)}</figcaption></figure>
+      </div>
+      {rows.length === 0 ? (
+        <p className="muted">Nothing bought yet. {kid.name} has ⭐ {kid.stars} to spend.</p>
+      ) : (
+        <>
+          <p className="muted">{rows.length} item{rows.length > 1 ? 's' : ''} bought for ⭐ {spent} in all, with ⭐ {kid.stars} left to spend.</p>
+          <table className="table">
+            <thead><tr><th>Item</th><th>Type</th><th>Price</th><th>Bought</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.item.id}>
+                  <td>{r.item.label}{r.season && <span title={`${r.season.label} set`}> {r.season.emoji}</span>}</td>
+                  <td>{SLOT_NAMES[r.item.slot]}</td>
+                  <td>⭐ {r.item.stars}</td>
+                  <td>{fmtWhen(r.bought_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </section>
+  );
 }
 
 function ScoreChart({ quizzes }: { quizzes: Dash['quizzes'] }) {
@@ -70,6 +124,13 @@ export function Dashboard() {
         <div className="tile"><span className={`tile-num lvl-${level(weekAvg)}`}>{weekAvg ?? '—'}{weekAvg !== null && '%'}</span><span>first-try score this week</span></div>
         <div className="tile"><span className="tile-num">🔥 {d.kid.streak}</span><span>day streak (best {d.kid.bestStreak})</span></div>
         <div className="tile"><span className="tile-num">⭐ {d.kid.stars}</span><span>stars · {d.badges.length}/{BADGES.length} badges</span></div>
+        <div className="tile">
+          <span className={`tile-num lvl-${level(d.challenge.mastery.pct)}`}>{d.challenge.mastery.pct}%</span>
+          <span>
+            mastered ({d.challenge.mastery.mastered} of {d.challenge.mastery.total} question types)
+            {d.challenge.nextGrade && (d.challenge.auto ? ` · ${d.challenge.nextGrade} challenges on` : ` · ${d.challenge.nextGrade} challenges start at 90%`)}
+          </span>
+        </div>
       </section>
 
       <section className="card">
@@ -118,6 +179,8 @@ export function Dashboard() {
           </tbody>
         </table>
       </section>
+
+      <Purchases kid={d.kid} purchases={d.purchases} />
 
       <section className="card">
         <h2>{d.kid.name}’s quiz history</h2>

@@ -8,14 +8,23 @@ import { absoluteValue } from './generators/absoluteValue.ts';
 import { divideWhole, multiplyWhole, placeValue } from './generators/wholeNumbers.ts';
 import { decimalFractions, fractionOps } from './generators/fractions4.ts';
 import { areaPerimeter } from './generators/geometry4.ts';
-import { factorsMultiples } from './generators/factors.ts';
+import { factorsMultiples, gcfLcm } from './generators/factors.ts';
+import { decimalOps } from './generators/decimals5.ts';
+import { fractionCalc } from './generators/fractions5.ts';
+import { equations, orderOfOps } from './generators/expressions.ts';
+import { polygonArea, volume } from './generators/geometry6.ts';
+import { percent, ratios } from './generators/ratios6.ts';
+import { statistics } from './generators/statistics6.ts';
+import { angles, circles, probability, proportions, rationalOps, simplifyExpressions, twoStepEquations } from './generators/grade7.ts';
 import { custom } from './generators/custom.ts';
 
 // To add a new kind of problem: write a generator in ./generators and list it here.
 export const GENERATORS: Record<string, GeneratorDef<any>> = Object.fromEntries(
   [
     orderNumbers, compareNumbers, plotPoint, readPoint, distanceSameLine, absoluteValue,
-    multiplyWhole, divideWhole, placeValue, fractionOps, decimalFractions, areaPerimeter, factorsMultiples, custom,
+    multiplyWhole, divideWhole, placeValue, fractionOps, decimalFractions, areaPerimeter, factorsMultiples,
+    decimalOps, fractionCalc, orderOfOps, equations, volume, polygonArea, ratios, percent, gcfLcm, statistics,
+    rationalOps, proportions, twoStepEquations, simplifyExpressions, circles, angles, probability, custom,
   ].map((g) => [g.id, g]),
 );
 

@@ -195,8 +195,15 @@ export function Bank() {
   const [catalog, setCatalog] = useState<GenInfo[]>([]);
   const [editing, setEditing] = useState<Draft | null>(null);
   const [copied, setCopied] = useState('');
+  const [sets, setSets] = useState(grades); // per child: how many of each set are new to their bank
 
-  const load = () => (kid ? api<Entry[]>('GET', `/api/parent/bank?kid=${kid.id}`).then(setEntries) : Promise.resolve());
+  const load = () =>
+    kid
+      ? Promise.all([
+          api<Entry[]>('GET', `/api/parent/bank?kid=${kid.id}`).then(setEntries),
+          api<typeof grades>('GET', `/api/parent/grade-sets?kid=${kid.id}`).then(setSets),
+        ])
+      : Promise.resolve();
   useEffect(() => {
     api<GenInfo[]>('GET', '/api/parent/generators').then(setCatalog);
   }, []);
@@ -248,17 +255,24 @@ export function Bank() {
       <div className="grade-set-row">
         <select value={addGrade} onChange={(e) => setAddGrade(Number(e.target.value))} aria-label="Grade set to add">
           <option value={0}>Add a grade set…</option>
-          {grades.map((g) => <option key={g.grade} value={g.grade}>{g.label} ({g.count} question types)</option>)}
+          {sets.map((g) => (
+            <option key={g.grade} value={g.grade} disabled={!g.missing}>
+              {g.label} ({g.missing === g.count ? `${g.count} question types` : g.missing ? `${g.missing} new of ${g.count}` : 'all already added'})
+            </option>
+          ))}
         </select>
         <button
           type="button"
           className="btn small"
           disabled={!addGrade}
           onClick={async () => {
-            const g = grades.find((x) => x.grade === addGrade)!;
-            if (!confirm(`Add the ${g.count} ${g.label} question types to ${kid.name}’s bank?`)) return;
-            await api('POST', '/api/parent/bank/grade-set', { kidId: kid.id, grade: addGrade });
+            const g = sets.find((x) => x.grade === addGrade)!;
+            const what = g.missing === g.count ? `the ${g.count} ${g.label} question types` : `the ${g.missing} ${g.label} question types ${kid.name} doesn’t have yet`;
+            if (!confirm(`Add ${what} to ${kid.name}’s bank?`)) return;
+            const res = await api<{ added: number }>('POST', '/api/parent/bank/grade-set', { kidId: kid.id, grade: addGrade });
             setAddGrade(0);
+            setCopied(`Added ${res.added} ${g.label} question type${res.added === 1 ? '' : 's'}.`);
+            setTimeout(() => setCopied(''), 3000);
             void load();
           }}
         >

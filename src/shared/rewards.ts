@@ -5,32 +5,79 @@ export interface Badge {
   name: string;
   emoji: string;
   description: string;
+  secret?: boolean; // hidden on the badge shelf until earned
 }
 
 export const BADGES: Badge[] = [
   { code: 'first_quiz', name: 'First Steps', emoji: '🐾', description: 'Finish your first quiz' },
   { code: 'quiz_10', name: 'Dedicated', emoji: '📚', description: 'Finish 10 quizzes' },
   { code: 'quiz_25', name: 'Math Marathon', emoji: '🏃‍♀️', description: 'Finish 25 quizzes' },
+  { code: 'quiz_50', name: 'Quiz Champion', emoji: '🎖️', description: 'Finish 50 quizzes' },
+  { code: 'quiz_100', name: 'Century Club', emoji: '🏆', description: 'Finish 100 quizzes' },
+  { code: 'quiz_250', name: 'Quiz Royalty', emoji: '👑', description: 'Finish 250 quizzes' },
   { code: 'perfect', name: 'Perfect!', emoji: '💯', description: 'Get every question right on the first try' },
+  { code: 'perfect_5', name: 'Sharpshooter', emoji: '🎯', description: 'Get 5 perfect quizzes' },
+  { code: 'perfect_25', name: 'Bullseye Boss', emoji: '🏹', description: 'Get 25 perfect quizzes' },
   { code: 'streak_3', name: 'On Fire', emoji: '🔥', description: 'Practice 3 days in a row' },
   { code: 'streak_7', name: 'Week Warrior', emoji: '🗓️', description: 'Practice 7 days in a row' },
   { code: 'streak_14', name: 'Unstoppable', emoji: '🚀', description: 'Practice 14 days in a row' },
+  { code: 'streak_30', name: 'Month of Math', emoji: '🌙', description: 'Practice 30 days in a row' },
+  { code: 'streak_60', name: 'Mountain Climber', emoji: '⛰️', description: 'Practice 60 days in a row' },
+  { code: 'streak_100', name: 'Diamond Streak', emoji: '💎', description: 'Practice 100 days in a row' },
   { code: 'stars_50', name: 'Star Collector', emoji: '⭐', description: 'Earn 50 stars' },
   { code: 'stars_200', name: 'Superstar', emoji: '🌟', description: 'Earn 200 stars' },
+  { code: 'stars_500', name: 'Shooting Star', emoji: '💫', description: 'Earn 500 stars' },
+  { code: 'stars_1000', name: 'Galaxy Brain', emoji: '🌌', description: 'Earn 1,000 stars' },
+  { code: 'stars_2500', name: 'Supernova', emoji: '☀️', description: 'Earn 2,500 stars' },
+  // topic mastery: 10 right in a row on the first try
   { code: 'plot_pro', name: 'Plot Pro', emoji: '📍', description: '10 coordinate questions right in a row' },
   { code: 'order_master', name: 'Order Master', emoji: '🔢', description: '10 ordering questions right in a row' },
   { code: 'distance_whiz', name: 'Distance Whiz', emoji: '📏', description: '10 distance questions right in a row' },
+  { code: 'abs_ace', name: 'Absolute Value Ace', emoji: '🧲', description: '10 absolute value questions right in a row' },
+  { code: 'factor_finder', name: 'Factor Finder', emoji: '🧩', description: '10 factor, multiple, GCF and LCM questions right in a row' },
+  { code: 'fraction_hero', name: 'Fraction Hero', emoji: '🍕', description: '10 fraction questions right in a row' },
+  { code: 'shape_shifter', name: 'Shape Shifter', emoji: '📐', description: '10 area, perimeter and volume questions right in a row' },
+  { code: 'number_ninja', name: 'Number Ninja', emoji: '🥷', description: '10 whole number questions right in a row' },
+  { code: 'decimal_dynamo', name: 'Decimal Dynamo', emoji: '🔟', description: '10 decimal questions right in a row' },
+  { code: 'ratio_ranger', name: 'Ratio Ranger', emoji: '⚖️', description: '10 ratio and percent questions right in a row' },
+  { code: 'equation_explorer', name: 'Equation Explorer', emoji: '🧮', description: '10 expression and equation questions right in a row' },
+  { code: 'data_detective', name: 'Data Detective', emoji: '🔍', description: '10 mean, median, mode and range questions right in a row' },
+  { code: 'grade_jumper', name: 'Grade Jumper', emoji: '🦘', description: 'Get a challenge question from the next grade right on the first try' },
+  { code: 'all_rounder', name: 'All-Rounder', emoji: '🎓', description: 'Earn the topic badge for every kind of question you practice' },
+  // effort and habits
   { code: 'comeback', name: 'Comeback Kid', emoji: '💪', description: 'Fix 5 answers on the second try in one quiz' },
+  { code: 'never_give_up', name: 'Never Give Up', emoji: '🛠️', description: 'Fix 50 answers on the second try' },
+  { code: 'early_bird', name: 'Early Bird', emoji: '🌅', description: 'Finish a quiz before 8 in the morning' },
+  { code: 'night_owl', name: 'Night Owl', emoji: '🦉', description: 'Finish a quiz after 8 at night' },
+  { code: 'weekend_warrior', name: 'Weekend Warrior', emoji: '🎉', description: 'Practice on a Saturday and the Sunday after it' },
+  { code: 'double_dip', name: 'Double Dip', emoji: '🔁', description: 'Finish 3 quizzes in one day' },
+  { code: 'monthly_regular', name: 'Monthly Regular', emoji: '📆', description: 'Practice on 20 different days in one month' },
+  // speed
+  { code: 'lightning', name: 'Lightning', emoji: '⚡', description: 'Get a perfect quiz averaging under 20 seconds a question' },
+  { code: 'personal_best', name: 'Personal Best', emoji: '⏱️', description: 'Beat your fastest perfect quiz' },
+  // Star Store
+  { code: 'fashionista', name: 'Fashionista', emoji: '👗', description: 'Own 15 things from the Star Store' },
+  { code: 'holiday_collector', name: 'Holiday Collector', emoji: '🎁', description: 'Collect every item in a holiday set' },
+  { code: 'dragon_tamer', name: 'Dragon Tamer', emoji: '🐉', description: 'Bring home Ember the dragon' },
+  { code: 'unicorn_friend', name: 'Unicorn Friend', emoji: '🦄', description: 'Bring home Stardust the unicorn' },
+  { code: 'saver', name: 'Super Saver', emoji: '💰', description: 'Save up 500 stars without spending them' },
+  // secret
+  { code: 'holiday_spirit', name: 'Holiday Spirit', emoji: '🦃', description: 'Practice on Thanksgiving or Christmas Day', secret: true },
+  { code: 'star_kid', name: 'Star Kid', emoji: '🌠', description: 'Draw a star on the scratch pad', secret: true },
+  { code: 'gamer', name: 'Gamer', emoji: '🎮', description: 'Found the secret code: ↑ ↑ ↓ ↓ ← → ← →', secret: true },
 ];
 
 export type Slot = 'color' | 'hat' | 'face' | 'extra' | 'helper' | 'helperFur' | 'helperHat' | 'helperExtra' | 'mode';
 
 /** Seasonal sets a grown-up switches on in Settings; their items are only for sale while switched on. */
-export type Season = 'halloween' | 'fall';
+export type Season = 'halloween' | 'fall' | 'thanksgiving' | 'winter' | 'christmas';
 
 export const SEASONS: { id: Season; label: string; emoji: string }[] = [
   { id: 'halloween', label: 'Halloween', emoji: '🎃' },
   { id: 'fall', label: 'Fall', emoji: '🍂' },
+  { id: 'thanksgiving', label: 'Thanksgiving', emoji: '🦃' },
+  { id: 'winter', label: 'Winter', emoji: '❄️' },
+  { id: 'christmas', label: 'Christmas', emoji: '🎄' },
 ];
 
 export const isSeason = (v: unknown): v is Season => SEASONS.some((s) => s.id === v);
@@ -113,6 +160,30 @@ export const AVATAR_ITEMS: AvatarItem[] = [
   { id: 'hfur-maple', slot: 'helperFur', label: 'Maple', stars: 40, season: 'fall' },
   { id: 'hhat-leaves', slot: 'helperHat', label: 'Leaf crown', stars: 55, season: 'fall' },
   { id: 'hextra-cocoa', slot: 'helperExtra', label: 'Hot cocoa', stars: 30, season: 'fall' },
+  // Thanksgiving set
+  { id: 'color-cranberry', slot: 'color', label: 'Cranberry', stars: 35, season: 'thanksgiving' },
+  { id: 'hat-pilgrim', slot: 'hat', label: 'Pilgrim hat', stars: 50, season: 'thanksgiving' },
+  { id: 'extra-turkey', slot: 'extra', label: 'Turkey feathers', stars: 80, season: 'thanksgiving' },
+  { id: 'hfur-harvest', slot: 'helperFur', label: 'Golden harvest', stars: 45, season: 'thanksgiving' },
+  { id: 'hhat-pilgrim', slot: 'helperHat', label: 'Pilgrim hat', stars: 50, season: 'thanksgiving' },
+  { id: 'hextra-pie', slot: 'helperExtra', label: 'Pumpkin pie', stars: 35, season: 'thanksgiving' },
+  // Winter set
+  { id: 'color-frost', slot: 'color', label: 'Frost', stars: 35, season: 'winter' },
+  { id: 'hat-pompom', slot: 'hat', label: 'Pom-pom hat', stars: 30, season: 'winter' },
+  { id: 'hat-earmuffs', slot: 'hat', label: 'Earmuffs', stars: 40, season: 'winter' },
+  { id: 'extra-snowflakes', slot: 'extra', label: 'Snowflakes', stars: 70, season: 'winter' },
+  { id: 'hfur-frost', slot: 'helperFur', label: 'Frost', stars: 45, season: 'winter' },
+  { id: 'hhat-earmuffs', slot: 'helperHat', label: 'Earmuffs', stars: 40, season: 'winter' },
+  { id: 'hextra-snowman', slot: 'helperExtra', label: 'Little snowman', stars: 45, season: 'winter' },
+  // Christmas set
+  { id: 'color-evergreen', slot: 'color', label: 'Evergreen', stars: 40, season: 'christmas' },
+  { id: 'hat-santa', slot: 'hat', label: 'Santa hat', stars: 60, season: 'christmas' },
+  { id: 'hat-antlers', slot: 'hat', label: 'Reindeer antlers', stars: 50, season: 'christmas' },
+  { id: 'face-rudolph', slot: 'face', label: 'Red nose', stars: 30, season: 'christmas' },
+  { id: 'extra-lights', slot: 'extra', label: 'Twinkle lights', stars: 75, season: 'christmas' },
+  { id: 'hfur-gingerbread', slot: 'helperFur', label: 'Gingerbread', stars: 55, season: 'christmas' },
+  { id: 'hhat-santa', slot: 'helperHat', label: 'Santa hat', stars: 60, season: 'christmas' },
+  { id: 'hextra-present', slot: 'helperExtra', label: 'Present', stars: 40, season: 'christmas' },
   // Celebration style
   { id: 'mode-normal', slot: 'mode', label: 'Normal', stars: 0 },
   { id: 'mode-crazy', slot: 'mode', label: 'Crazy Mode', stars: 75 },

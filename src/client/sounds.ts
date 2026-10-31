@@ -56,6 +56,12 @@ export const sounds = {
   correct: () => play(() => [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.08, 0.3))),
   tryAgain: () => play(() => [392, 329.63].forEach((f, i) => tone(f, i * 0.15, 0.3, 'sine', 0.15))),
   reveal: () => play(() => tone(293.66, 0, 0.4, 'sine', 0.12)),
+  starRide: () =>
+    play(() => {
+      slide(220, 1100, 0, 0.7, 'sine', 0.12); // swoosh in
+      [1046.5, 1318.5, 1568, 2093, 1568, 2093, 2637].forEach((f, i) => tone(f, 0.8 + i * 0.16, 0.3, 'triangle', 0.07)); // twinkles round the loop
+      slide(500, 2400, 2.7, 0.8, 'sine', 0.09); // and away
+    }),
   tap: () => play(() => tone(880, 0, 0.06, 'sine', 0.06)),
   fanfare: () =>
     play(() => {

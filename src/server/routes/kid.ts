@@ -2,7 +2,8 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { DB } from '../db.ts';
 import type { Auth } from '../auth.ts';
 import { buyItem, checkCode, getKid, listKids, ownedItems, owns, saveAvatar } from '../kids.ts';
-import { answerQuestion, createQuiz, finishQuiz, getSettings, HttpError, quizReview } from '../quiz.ts';
+import { awardBadges, storeBadges } from '../badges.ts';
+import { answerQuestion, challengeInfo, createQuiz, finishQuiz, getSettings, HttpError, quizReview } from '../quiz.ts';
 import { AVATAR_ITEMS, type Avatar, type Slot } from '../../shared/rewards.ts';
 
 export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
@@ -42,6 +43,7 @@ export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
       lastDate: kid.lastDate,
       avatar: kid.avatar,
       seasons: getSettings(db).seasons,
+      challenge: challengeInfo(db, kid),
       badges: db.prepare('SELECT code, earned_at FROM kid_badges WHERE kid_id = ? ORDER BY earned_at').all(kid.id),
     };
   });
@@ -69,18 +71,28 @@ export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
     if (err) throw new HttpError(409, err);
     const avatar = { ...kid.avatar, [item.slot]: item.id };
     saveAvatar(db, kid.id, avatar);
-    return { stars: getKid(db, kid.id)!.stars, avatar, owned: ownedItems(db, kid.id) };
+    const stars = getKid(db, kid.id)!.stars;
+    const newBadges = awardBadges(db, kid.id, storeBadges(db, kid.id, stars));
+    return { stars, avatar, owned: ownedItems(db, kid.id), newBadges };
   });
 
-  app.post('/api/quiz', async (req) => createQuiz(db, currentKid(req).id));
+  // Secrets found on the page: the cheat code (up up down down left right left right) and a star drawn on the scratch pad.
+  const FOUND_SECRETS = new Set(['gamer', 'star_kid']);
+  app.post<{ Params: { badge: string } }>('/api/secret/:badge', async (req) => {
+    const kid = currentKid(req);
+    if (!FOUND_SECRETS.has(req.params.badge)) throw new HttpError(404, 'No such secret');
+    return { newBadges: awardBadges(db, kid.id, { [req.params.badge]: true }) };
+  });
+
+  app.post<{ Body: { challenge?: boolean } }>('/api/quiz', async (req) => createQuiz(db, currentKid(req).id, { challenge: req.body?.challenge === true }));
 
   app.post<{ Params: { id: string }; Body: { questionId: number; response: unknown; timeMs: number } }>('/api/quiz/:id/answer', async (req) =>
     answerQuestion(db, currentKid(req).id, Number(req.params.id), Number(req.body?.questionId), req.body?.response, req.body?.timeMs),
   );
 
-  app.post<{ Params: { id: string }; Body: { localDate?: string } }>('/api/quiz/:id/finish', async (req) => ({
+  app.post<{ Params: { id: string }; Body: { localDate?: string; localHour?: number } }>('/api/quiz/:id/finish', async (req) => ({
     quizId: Number(req.params.id),
-    ...finishQuiz(db, currentKid(req).id, Number(req.params.id), req.body?.localDate),
+    ...finishQuiz(db, currentKid(req).id, Number(req.params.id), req.body?.localDate, req.body?.localHour),
   }));
 
   // Answers and explanations, but only for the child's own quiz once it's finished.

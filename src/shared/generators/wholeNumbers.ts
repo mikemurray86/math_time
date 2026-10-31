@@ -10,14 +10,14 @@ const withDigits = (rng: Rng, d: number) => rng.int(10 ** (d - 1), 10 ** d - 1);
 
 export interface MultiplyParams {
   [k: string]: unknown;
-  shape: '2x1' | '3x1' | '4x1' | '2x2';
+  shape: '2x1' | '3x1' | '4x1' | '2x2' | '3x2' | '4x2';
 }
 
 export const multiplyWhole: GeneratorDef<MultiplyParams> = {
   id: 'multiplyWhole',
   name: 'Multi-digit multiplication',
   skill: 'Multiplication & division',
-  description: 'Multiply up to a 4-digit number by a 1-digit number, or two 2-digit numbers.',
+  description: 'Multiply up to a 4-digit number by a 1- or 2-digit number.',
   defaults: { shape: '3x1' },
   fields: [
     {
@@ -29,6 +29,8 @@ export const multiplyWhole: GeneratorDef<MultiplyParams> = {
         { value: '3x1', label: '3-digit × 1-digit' },
         { value: '4x1', label: '4-digit × 1-digit' },
         { value: '2x2', label: '2-digit × 2-digit' },
+        { value: '3x2', label: '3-digit × 2-digit' },
+        { value: '4x2', label: '4-digit × 2-digit' },
       ],
     },
   ],
@@ -36,6 +38,8 @@ export const multiplyWhole: GeneratorDef<MultiplyParams> = {
     { id: '3x1', label: '3-digit × 1-digit', params: { shape: '3x1' } },
     { id: '4x1', label: '4-digit × 1-digit', params: { shape: '4x1' } },
     { id: '2x2', label: '2-digit × 2-digit', params: { shape: '2x2' } },
+    { id: '3x2', label: '3-digit × 2-digit', params: { shape: '3x2' } },
+    { id: '4x2', label: '4-digit × 2-digit', params: { shape: '4x2' } },
   ],
   generate(p, rng) {
     const [da, db] = p.shape.split('x').map(Number);
@@ -69,6 +73,7 @@ export const multiplyWhole: GeneratorDef<MultiplyParams> = {
 export interface DivideParams {
   [k: string]: unknown;
   dividendDigits: number;
+  divisorDigits: number;
   remainder: 'always' | 'never' | 'either';
 }
 
@@ -76,10 +81,11 @@ export const divideWhole: GeneratorDef<DivideParams> = {
   id: 'divideWhole',
   name: 'Long division',
   skill: 'Multiplication & division',
-  description: 'Divide up to a 4-digit number by a 1-digit number, with or without a remainder.',
-  defaults: { dividendDigits: 3, remainder: 'either' },
+  description: 'Divide up to a 4-digit number by a 1- or 2-digit number, with or without a remainder.',
+  defaults: { dividendDigits: 3, divisorDigits: 1, remainder: 'either' },
   fields: [
     { key: 'dividendDigits', label: 'Digits in the number being divided', type: 'int', min: 2, max: 4 },
+    { key: 'divisorDigits', label: 'Digits in the number you divide by', type: 'int', min: 1, max: 2 },
     {
       key: 'remainder',
       label: 'Remainders',
@@ -92,14 +98,16 @@ export const divideWhole: GeneratorDef<DivideParams> = {
     },
   ],
   presets: [
-    { id: '3-digit-r', label: '3-digit ÷ 1-digit, with remainders', params: { dividendDigits: 3, remainder: 'either' } },
-    { id: '4-digit', label: '4-digit ÷ 1-digit, divides evenly', params: { dividendDigits: 4, remainder: 'never' } },
-    { id: '4-digit-r', label: '4-digit ÷ 1-digit, with remainders', params: { dividendDigits: 4, remainder: 'always' } },
+    { id: '3-digit-r', label: '3-digit ÷ 1-digit, with remainders', params: { dividendDigits: 3, divisorDigits: 1, remainder: 'either' } },
+    { id: '4-digit', label: '4-digit ÷ 1-digit, divides evenly', params: { dividendDigits: 4, divisorDigits: 1, remainder: 'never' } },
+    { id: '4-digit-r', label: '4-digit ÷ 1-digit, with remainders', params: { dividendDigits: 4, divisorDigits: 1, remainder: 'always' } },
+    { id: '2-digit-divisor', label: '4-digit ÷ 2-digit, with remainders', params: { dividendDigits: 4, divisorDigits: 2, remainder: 'either' } },
+    { id: '2-digit-divisor-even', label: '4-digit ÷ 2-digit, divides evenly', params: { dividendDigits: 4, divisorDigits: 2, remainder: 'never' } },
   ],
   generate(p, rng) {
     const lo = 10 ** (p.dividendDigits - 1);
     const hi = 10 ** p.dividendDigits - 1;
-    const d = rng.int(3, 9);
+    const d = p.divisorDigits === 2 ? rng.int(11, 49) : rng.int(3, 9);
     const wantR = p.remainder === 'always' || (p.remainder === 'either' && rng.bool(0.7));
     const r = wantR ? rng.int(1, d - 1) : 0;
     const q = rng.int(Math.ceil((lo - r) / d), Math.floor((hi - r) / d));

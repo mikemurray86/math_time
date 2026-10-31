@@ -1,5 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { HelperLookProvider } from './helperLook.tsx';
+import { SecretCode } from './components/SecretCode.tsx';
+import { StarRide } from './components/StarRide.tsx';
 import { Home } from './pages/Home.tsx';
 import { Who } from './pages/Who.tsx';
 import { Kids } from './pages/parent/Kids.tsx';
@@ -15,6 +17,8 @@ import { SettingsPage } from './pages/parent/SettingsPage.tsx';
 export function App() {
   return (
     <HelperLookProvider>
+      <SecretCode />
+      <StarRide />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/who" element={<Who />} />

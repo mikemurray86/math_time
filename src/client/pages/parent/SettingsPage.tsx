@@ -6,6 +6,7 @@ interface Settings {
   quizLength: number;
   allowRetry: boolean;
   seasons: Season[];
+  challenges: boolean;
 }
 
 export function SettingsPage() {
@@ -36,6 +37,13 @@ export function SettingsPage() {
             <input type="checkbox" checked={s.allowRetry} onChange={(e) => setS({ ...s, allowRetry: e.target.checked })} />
             Give one hint and a second try after a wrong answer
           </label>
+        </div>
+        <div className="field">
+          <label className="check">
+            <input type="checkbox" checked={s.challenges} onChange={(e) => setS({ ...s, challenges: e.target.checked })} />
+            Next-grade challenge questions
+          </label>
+          <p className="muted">Children can pick challenge mode to add 2 questions from the next grade to a quiz. Once a child has mastered 90% of their question bank (8 of the last 10 right on the first try, for each question type), about 1 in 5 quiz questions comes from the next grade on its own.</p>
         </div>
         <fieldset className="field">
           <legend>Seasonal Star Store items</legend>

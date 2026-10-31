@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, ApiError, localDate } from '../api.ts';
 import type { Answer, InputSpec, PublicQuestion } from '../../shared/types.ts';
 import { exprValue, type Rich } from '../../shared/expr.ts';
@@ -15,7 +15,8 @@ import { useModeFx } from '../components/ModeFx.tsx';
 interface QuizData {
   quizId: number;
   allowRetry: boolean;
-  questions: (PublicQuestion & { id: number })[];
+  challengeMode: boolean;
+  questions: (PublicQuestion & { id: number; challenge?: string })[]; // challenge: the grade it's from
 }
 
 interface Feedback {
@@ -52,6 +53,7 @@ function numberLineFor(input: InputSpec) {
 
 export function Quiz() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [error, setError] = useState('');
   const [idx, setIdx] = useState(0);
@@ -67,14 +69,14 @@ export function Quiz() {
   useEffect(() => {
     if (started.current) return; // StrictMode runs effects twice in dev
     started.current = true;
-    api<QuizData>('POST', '/api/quiz')
+    api<QuizData>('POST', '/api/quiz', { challenge: params.get('challenge') === '1' })
       .then((q) => {
         setQuiz(q);
         setDraft(initialDraft(q.questions[0].input));
         shownAt.current = Date.now();
       })
       .catch((e) => (e instanceof ApiError && e.status === 401 ? navigate('/who', { replace: true }) : setError(e.message)));
-  }, [navigate]);
+  }, [navigate, params]);
 
   if (error) {
     return (
@@ -128,7 +130,7 @@ export function Quiz() {
     if (isLast) {
       setBusy(true);
       try {
-        const result = await api<QuizResult>('POST', `/api/quiz/${quiz.quizId}/finish`, { localDate: localDate() });
+        const result = await api<QuizResult>('POST', `/api/quiz/${quiz.quizId}/finish`, { localDate: localDate(), localHour: new Date().getHours() });
         navigate('/results', { replace: true, state: result });
       } catch (e) {
         setError((e as Error).message);
@@ -169,6 +171,7 @@ export function Quiz() {
 
       <section className="card question" key={q.id}>
         <div className="q-number">Question {idx + 1} of {quiz.questions.length}</div>
+        {q.challenge && <div className="challenge-ribbon">🚀 Challenge question · {q.challenge}</div>}
         <h1 className="prompt"><MathText r={q.prompt} /></h1>
         <QuestionInput input={q.input} draft={draft} onChange={setDraft} locked={locked} reveal={feedback?.final && !feedback.correct ? feedback.answer : undefined} onEnter={submit} />
       </section>

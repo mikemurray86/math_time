@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { load, save } from '../storage.ts';
+import { isStar } from '../../shared/starShape.ts';
+import { foundStar } from './StarRide.tsx';
 
 interface Stroke {
   color: string;
@@ -127,8 +129,12 @@ export function ScratchPad({ numberLine }: { numberLine?: { min: number; max: nu
   };
 
   const up = () => {
-    if (current.current) setCount(strokes.current.length);
+    const s = current.current;
     current.current = null;
+    if (!s) return;
+    setCount(strokes.current.length);
+    const c = canvasRef.current;
+    if (!s.erase && c && isStar(s.pts.map(([x, y]) => [x * c.clientWidth, y * c.clientHeight]))) foundStar();
   };
 
   const undo = () => {

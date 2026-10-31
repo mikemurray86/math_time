@@ -13,6 +13,7 @@ export function Home() {
   const navigate = useNavigate();
   const [me] = useMe();
   const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
+  const [challenge, setChallenge] = useState(false);
   const switchKid = async () => {
     await api('POST', '/api/kid/logout');
     navigate('/who');
@@ -48,19 +49,36 @@ export function Home() {
         {practicedToday ? 'You already practiced today. Want to go for more stars?' : me?.streak ? `Keep your ${me.streak}-day streak going! ${greeting}` : greeting}
       </MascotSays>
 
-      <Link to="/quiz" className="btn btn-big btn-primary start-btn">Start a quiz 🚀</Link>
+      <Link to={challenge ? '/quiz?challenge=1' : '/quiz'} className="btn btn-big btn-primary start-btn">Start a quiz 🚀</Link>
+      {me?.challenge.available && (
+        <div className="challenge-pick">
+          <label className={`challenge-toggle ${challenge ? 'on' : ''}`}>
+            <input type="checkbox" checked={challenge} onChange={(e) => setChallenge(e.target.checked)} />
+            <span>⚡ <strong>Challenge mode</strong>: add 2 bonus questions from {me.challenge.nextGrade}</span>
+          </label>
+          {me.challenge.auto && <p className="muted">🎓 You’ve mastered {me.challenge.mastery.pct}% of your questions, so {me.challenge.nextGrade} questions will pop up in every quiz!</p>}
+        </div>
+      )}
       <Link to="/avatar" className="btn btn-big store-btn">⭐ Star Store <small>dress up you &amp; {me ? helperName(me.avatar) : 'your helper'}</small></Link>
 
       <section className="card">
         <h2>My badges</h2>
         <ul className="badge-shelf">
-          {BADGES.map((b) => (
-            <li key={b.code} className={earned.has(b.code) ? 'earned' : 'locked'} title={b.description}>
-              <span className="badge-emoji">{earned.has(b.code) ? b.emoji : '🔒'}</span>
-              <span className="badge-name">{b.name}</span>
-              <span className="badge-desc">{b.description}</span>
-            </li>
-          ))}
+          {BADGES.map((b) =>
+            b.secret && !earned.has(b.code) ? (
+              <li key={b.code} className="locked secret" title="A secret badge">
+                <span className="badge-emoji">❓</span>
+                <span className="badge-name">Secret badge</span>
+                <span className="badge-desc">Keep practicing to discover it!</span>
+              </li>
+            ) : (
+              <li key={b.code} className={earned.has(b.code) ? 'earned' : 'locked'} title={b.description}>
+                <span className="badge-emoji">{earned.has(b.code) ? b.emoji : '🔒'}</span>
+                <span className="badge-name">{b.name}</span>
+                <span className="badge-desc">{b.description}</span>
+              </li>
+            ),
+          )}
         </ul>
       </section>
 

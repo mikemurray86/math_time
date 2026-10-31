@@ -113,6 +113,7 @@ h2 { font-size: 1.15rem; font-weight: 800; }
 .badge-shelf { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
 .badge-shelf li { text-align: center; padding: 10px 6px; border-radius: 16px; background: var(--purple-soft); display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .badge-shelf li.locked { background: #f1eff5; filter: grayscale(1); opacity: 0.6; }
+.badge-shelf li.secret { filter: none; opacity: 0.8; background: repeating-linear-gradient(45deg, #f1eff5 0 8px, #e8e3f5 8px 16px); }
 .badge-emoji { font-size: 2rem; }
 .badge-name { font-weight: 800; font-size: 0.85rem; }
 .badge-desc { font-size: 0.72rem; color: var(--ink-soft); }
@@ -611,3 +612,25 @@ body.crazy-shake .page { animation: crazy-shake 0.6s; }
 .grade-tag { font-size: 0.75rem; font-weight: 800; background: var(--purple-soft); color: var(--purple-dark); border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }
 .grade-set-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .grade-set-row select { padding: 8px 10px; border-radius: 12px; border: 2px solid var(--line); background: #fff; min-height: 42px; }
+.store-looks { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
+.store-looks figure { margin: 0; text-align: center; font-weight: 700; }
+.cheat-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 50; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 14px; background: #1d1d2b; color: #fbd000; font-family: ui-monospace, monospace; box-shadow: 0 6px 0 #049cd8; animation: cheat-in 0.35s steps(4) both; }
+@keyframes cheat-in { from { transform: translate(-50%, -40px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+
+/* ---- Star Kid: the helper rides a shooting star across a night sky ---- */
+.star-sky { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, rgba(60, 40, 140, 0.55), rgba(15, 10, 40, 0.75)); animation: sky-in 0.4s ease-out both, sky-in 0.5s ease-in 3.6s reverse forwards; }
+@keyframes sky-in { from { opacity: 0; } to { opacity: 1; } }
+.star-rider { position: absolute; left: 0; top: 0; width: 130px; height: 150px; will-change: transform; filter: drop-shadow(0 0 14px rgba(255, 214, 10, 0.8)); }
+.ride-star { position: absolute; left: 0; bottom: 0; }
+.ride-helper { position: absolute; left: 23px; top: 0; }
+.star-spark { position: absolute; font-size: 18px; line-height: 1; text-shadow: 0 0 6px currentColor; animation: spark-fade 0.9s ease-out forwards; }
+@keyframes spark-fade { from { opacity: 1; transform: scale(1) rotate(0); } to { opacity: 0; transform: translateY(14px) scale(0.2) rotate(140deg); } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- challenge mode ---- */
+.challenge-pick { display: flex; flex-direction: column; gap: 4px; margin-top: -4px; }
+.challenge-pick p { margin: 0; text-align: center; }
+.challenge-toggle { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; border: 2px dashed #f0b429; background: var(--amber-soft); font-weight: 700; cursor: pointer; }
+.challenge-toggle input { width: 22px; height: 22px; accent-color: #e08a00; flex: none; }
+.challenge-toggle.on { border-style: solid; background: #ffe7a8; box-shadow: 0 0 0 3px rgba(240, 180, 41, 0.35); }
+.challenge-ribbon { display: inline-block; margin-bottom: 8px; padding: 4px 10px; border-radius: 999px; background: linear-gradient(90deg, #ffb703, #fb8500); color: #fff; font-weight: 800; font-size: 0.85rem; }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.ts';
 import { useMe } from '../useMe.ts';
-import { AVATAR_ITEMS, DEFAULT_AVATAR, SEASONS, helperName, type Avatar, type AvatarItem, type Slot } from '../../shared/rewards.ts';
+import { AVATAR_ITEMS, BADGES, DEFAULT_AVATAR, SEASONS, helperName, type Avatar, type AvatarItem, type Slot } from '../../shared/rewards.ts';
 import { AvatarView } from '../components/AvatarView.tsx';
 import { Helper } from '../components/Mascot.tsx';
 import { useHelperLook } from '../helperLook.tsx';
@@ -45,6 +45,7 @@ export function AvatarPage() {
   const [slot, setSlot] = useState<Slot>('color');
   const [buying, setBuying] = useState<AvatarItem | null>(null);
   const [error, setError] = useState('');
+  const [newBadges, setNewBadges] = useState<string[]>([]);
   if (!me) return <main className="page kid"><div className="loading">Loading…</div></main>;
   const avatar: Avatar = { ...DEFAULT_AVATAR, ...me.avatar };
 
@@ -62,8 +63,10 @@ export function AvatarPage() {
 
   const buy = async (item: AvatarItem) => {
     try {
-      const res = await api<{ stars: number; avatar: Avatar; owned: string[] }>('POST', '/api/shop/buy', { itemId: item.id });
-      setMe({ ...me, stars: res.stars, avatar: res.avatar, owned: res.owned });
+      const res = await api<{ stars: number; avatar: Avatar; owned: string[]; newBadges: string[] }>('POST', '/api/shop/buy', { itemId: item.id });
+      const earnedAt = new Date().toISOString();
+      setMe({ ...me, stars: res.stars, avatar: res.avatar, owned: res.owned, badges: [...me.badges, ...res.newBadges.map((code) => ({ code, earned_at: earnedAt }))] });
+      setNewBadges(res.newBadges);
       setAvatar(res.avatar);
       setBuying(null);
       sounds.badge();
@@ -97,6 +100,24 @@ export function AvatarPage() {
         </button>
       </div>
       <div className="avatar-preview card">{preview(avatar, 170)}</div>
+      {newBadges.length > 0 && (
+        <section className="card new-badges">
+          <h2>New badge{newBadges.length > 1 ? 's' : ''}!</h2>
+          <ul className="badge-shelf">
+            {newBadges.map((code) => {
+              const b = BADGES.find((x) => x.code === code)!;
+              return (
+                <li key={code} className="earned pop">
+                  <span className="badge-emoji">{b.emoji}</span>
+                  <span className="badge-name">{b.name}</span>
+                  <span className="badge-desc">{b.description}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <button type="button" className="btn" onClick={() => setNewBadges([])}>Awesome!</button>
+        </section>
+      )}
       <div className="tabs" role="tablist">
         {SLOTS[who].map((s) => (
           <button key={s.slot} role="tab" aria-selected={slot === s.slot} className={`tab ${slot === s.slot ? 'active' : ''}`} onClick={() => setSlot(s.slot)}>

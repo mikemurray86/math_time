@@ -183,6 +183,124 @@ describe('kid flow', () => {
     expect((await me()).seasons).toEqual(['fall']);
   });
 
+  it('awards habit, speed and secret badges', async () => {
+    // A whole quiz: every answer right (or skipped), each taking timeMs.
+    const quiz = async (localDate: string, opts: { localHour?: number; timeMs?: number; skip?: boolean } = {}) => {
+      const z = (await post('/api/quiz')).json();
+      if (!opts.skip) {
+        for (const q of z.questions) await post(`/api/quiz/${z.quizId}/answer`, { questionId: q.id, response: rightResponse(answerFor(q.id)), timeMs: opts.timeMs ?? 30_000 });
+      }
+      return (await post(`/api/quiz/${z.quizId}/finish`, { localDate, localHour: opts.localHour })).json().newBadges as string[];
+    };
+
+    expect(await quiz('2026-10-24', { localHour: 7, timeMs: 30_000 })).toEqual(expect.arrayContaining(['first_quiz', 'perfect', 'early_bird'])); // a Saturday
+    let got = await quiz('2026-10-25', { localHour: 21, timeMs: 15_000 }); // Sunday, faster
+    expect(got).toEqual(expect.arrayContaining(['night_owl', 'weekend_warrior', 'lightning', 'personal_best']));
+    expect(got).not.toContain('early_bird');
+    expect(await quiz('2026-10-26', { skip: true })).toEqual(['streak_3']);
+    expect(await quiz('2026-10-26', { skip: true })).toEqual([]);
+    expect(await quiz('2026-10-26', { skip: true })).toEqual(['double_dip']); // the third quiz today
+    got = await quiz('2026-10-27', { localHour: 12, timeMs: 15_000 }); // midday, and not faster than her best
+    for (const code of ['early_bird', 'night_owl', 'personal_best', 'holiday_spirit']) expect(got).not.toContain(code);
+    expect(await quiz('2026-11-26', { skip: true })).toContain('holiday_spirit'); // Thanksgiving 2026
+  });
+
+  it('awards Star Store badges when buying', async () => {
+    db.prepare('UPDATE kids SET stars = 2000 WHERE id = ?').run(kidId);
+    const buy = (itemId: string) => post('/api/shop/buy', { itemId }).then((r) => r.json().newBadges as string[]);
+    expect(await buy('helper-dragon')).toEqual(['dragon_tamer', 'saver']); // 1250 stars left
+    expect(await buy('helper-unicorn')).toEqual(['unicorn_friend']);
+
+    const cookie = await login();
+    await app.inject({ method: 'PUT', url: '/api/parent/settings', headers: { cookie }, payload: { seasons: ['thanksgiving'] } });
+    db.prepare('UPDATE kids SET stars = 2000 WHERE id = ?').run(kidId);
+    const set = ['color-cranberry', 'hat-pilgrim', 'extra-turkey', 'hfur-harvest', 'hhat-pilgrim', 'hextra-pie'];
+    for (const id of set.slice(0, -1)) expect(await buy(id)).toEqual([]);
+    expect(await buy('hextra-pie')).toEqual(['holiday_collector']);
+
+    // grown-ups can see what was bought
+    const dash = (await app.inject({ url: `/api/parent/dashboard?kid=${kidId}`, headers: { cookie } })).json();
+    expect(dash.purchases.map((p: { item_id: string }) => p.item_id).sort()).toEqual([...set, 'helper-dragon', 'helper-unicorn'].sort());
+  });
+
+  it('awards the secret Gamer badge once', async () => {
+    expect((await post('/api/secret/gamer')).json().newBadges).toEqual(['gamer']);
+    expect((await post('/api/secret/gamer')).json().newBadges).toEqual([]);
+    expect((await post('/api/secret/gamer', {}, '')).statusCode).toBe(401);
+  });
+
+  it('awards Star Kid for a star on the scratch pad, but not just any badge', async () => {
+    expect((await post('/api/secret/star_kid')).json().newBadges).toEqual(['star_kid']);
+    expect((await post('/api/secret/star_kid')).json().newBadges).toEqual([]);
+    expect((await post('/api/secret/stars_2500')).statusCode).toBe(404);
+  });
+
+  it('adds 2 next-grade questions in challenge mode, and a badge for getting one right first try', async () => {
+    const me = () => app.inject({ url: '/api/me', headers: { cookie: kidCookie } }).then((r) => r.json());
+    expect((await me()).challenge).toMatchObject({ available: true, nextGrade: '7th grade', auto: false });
+
+    const plain = (await post('/api/quiz')).json();
+    expect(plain.questions).toHaveLength(10);
+    expect(plain.questions.some((q: { challenge?: string }) => q.challenge)).toBe(false);
+
+    const quiz = (await post('/api/quiz', { challenge: true })).json();
+    expect(quiz.challengeMode).toBe(true);
+    expect(quiz.questions).toHaveLength(12);
+    const hard = quiz.questions.filter((q: { challenge?: string }) => q.challenge);
+    expect(hard).toHaveLength(2);
+    expect(hard[0].challenge).toBe('7th grade');
+    const row = db.prepare('SELECT bank_entry_id, challenge FROM quiz_questions WHERE id = ?').get(hard[0].id)!;
+    expect(row).toMatchObject({ bank_entry_id: null, challenge: 1 }); // not part of her bank
+
+    await post(`/api/quiz/${quiz.quizId}/answer`, { questionId: hard[0].id, response: rightResponse(answerFor(hard[0].id)) });
+    const fin = (await post(`/api/quiz/${quiz.quizId}/finish`, { localDate: '2026-10-28' })).json();
+    expect(fin.newBadges).toContain('grade_jumper');
+
+    // the parent review says where a challenge question came from
+    const cookie = await login();
+    const review = (await app.inject({ url: `/api/parent/quiz/${quiz.quizId}`, headers: { cookie } })).json();
+    expect(review.questions.find((q: { id: number }) => q.id === hard[0].id).label).toMatch(/^🚀 Challenge · 7th grade: /);
+  });
+
+  it('mixes in next-grade questions on its own once 90% of the bank is mastered', async () => {
+    const me = () => app.inject({ url: '/api/me', headers: { cookie: kidCookie } }).then((r) => r.json());
+    // 8 of the last 10 right on the first try for every question type
+    const entries = db.prepare('SELECT id, generator, params_json FROM bank_entries WHERE kid_id = ?').all(kidId);
+    const quizId = Number(db.prepare(`INSERT INTO quizzes (kid_id, total, finished_at) VALUES (?, 0, datetime('now'))`).run(kidId).lastInsertRowid);
+    const insert = db.prepare(
+      `INSERT INTO quiz_questions (quiz_id, position, bank_entry_id, generator, params_json, seed, answer_json, correct_first, correct_final, answered_at)
+       VALUES (?, 0, ?, ?, ?, 1, '{}', ?, 1, datetime('now'))`,
+    );
+    const practice = (count: number) => {
+      for (const e of entries.slice(0, count)) for (let i = 0; i < 10; i++) insert.run(quizId, e.id, e.generator, e.params_json, i < 8 ? 1 : 0);
+    };
+    practice(Math.ceil(entries.length * 0.9) - 1); // just under 90%
+    expect((await me()).challenge.auto).toBe(false);
+    practice(entries.length);
+    expect((await me()).challenge).toMatchObject({ auto: true, mastery: { mastered: entries.length, total: entries.length, pct: 100 } });
+
+    const quiz = (await post('/api/quiz')).json();
+    expect(quiz.questions).toHaveLength(10); // same length, 2 of them from 7th grade
+    expect(quiz.questions.filter((q: { challenge?: string }) => q.challenge)).toHaveLength(2);
+    expect((await post('/api/quiz', { challenge: true })).json().questions.filter((q: { challenge?: string }) => q.challenge)).toHaveLength(4);
+
+    // a grown-up can switch challenges off
+    const cookie = await login();
+    await app.inject({ method: 'PUT', url: '/api/parent/settings', headers: { cookie }, payload: { challenges: false } });
+    expect((await me()).challenge).toMatchObject({ available: false, auto: false });
+    const off = (await post('/api/quiz', { challenge: true })).json();
+    expect(off.questions.filter((q: { challenge?: string }) => q.challenge)).toHaveLength(0);
+  });
+
+  it('has no challenges past the last grade', async () => {
+    const cookie = await login();
+    const zoe = (await post('/api/parent/kids', { name: 'Zoe', grade: 7 }, cookie)).json().id;
+    const zoeCookie = cookieOf(await post('/api/kid/login', { kidId: zoe }, ''));
+    const me = (await app.inject({ url: '/api/me', headers: { cookie: zoeCookie } })).json();
+    expect(me.challenge).toMatchObject({ available: false, nextGrade: null });
+    expect((await post('/api/quiz', { challenge: true }, zoeCookie)).json().questions).toHaveLength(10);
+  });
+
   it('explains an empty bank', async () => {
     db.exec('UPDATE bank_entries SET enabled = 0');
     const res = await post('/api/quiz');
@@ -292,7 +410,7 @@ describe('multiple children', () => {
   it('starts a new child with their grade’s question set', async () => {
     const cookie = await login();
     const get = (url: string) => app.inject({ url, headers: { cookie } }).then((r) => r.json());
-    expect((await get('/api/parent/grade-sets')).map((g: { grade: number }) => g.grade)).toEqual([4, 6]);
+    expect((await get('/api/parent/grade-sets')).map((g: { grade: number }) => g.grade)).toEqual([4, 5, 6, 7]);
 
     const ava = (await post('/api/parent/kids', { name: 'Ava', grade: 4 }, cookie)).json().id;
     const bank = await get(`/api/parent/bank?kid=${ava}`);
@@ -313,6 +431,29 @@ describe('multiple children', () => {
     expect(bigger.map((b: { generator: string }) => b.generator)).toContain('plotPoint');
     await app.inject({ method: 'PUT', url: `/api/parent/kids/${ava}`, headers: { cookie }, payload: { grade: 6 } });
     expect((await get(`/api/parent/bank?kid=${ava}`)).length).toBe(bigger.length);
+  });
+
+  it('adds only the grade set entries a child doesn’t have yet', async () => {
+    const cookie = await login();
+    const sets = () => app.inject({ url: `/api/parent/grade-sets?kid=${kidId}`, headers: { cookie } }).then((r) => r.json());
+    const sixth = (await sets()).find((g: { grade: number }) => g.grade === 6);
+    expect(sixth.missing).toBe(0); // she started from the 6th grade set
+    expect((await post('/api/parent/bank/grade-set', { kidId, grade: 6 }, cookie)).json().added).toBe(0);
+    expect((await post('/api/parent/bank/grade-set', { kidId, grade: 7 }, cookie)).json().added).toBe(10);
+    expect((await sets()).find((g: { grade: number }) => g.grade === 7).missing).toBe(0);
+  });
+
+  it('gives a 5th grader 5th grade work, with no negative numbers', async () => {
+    const cookie = await login();
+    const ben = (await post('/api/parent/kids', { name: 'Ben', grade: 5 }, cookie)).json().id;
+    const bank = (await app.inject({ url: `/api/parent/bank?kid=${ben}`, headers: { cookie } })).json();
+    expect(bank.map((b: { generator: string }) => b.generator)).toEqual(expect.arrayContaining(['decimalOps', 'fractionCalc', 'volume', 'orderOfOps']));
+    expect(bank.map((b: { generator: string }) => b.generator)).not.toContain('absoluteValue');
+    const benCookie = cookieOf(await post('/api/kid/login', { kidId: ben }, ''));
+    for (let i = 0; i < 20; i++) {
+      const quiz = (await post('/api/quiz', {}, benCookie)).json();
+      expect(JSON.stringify(quiz)).not.toMatch(/"neg":true|"v":-|"text":"-/);
+    }
   });
 
   it('lets parents add and remove stars, never below zero', async () => {
@@ -414,5 +555,13 @@ describe('pickEntries', () => {
 
   it('skips zero-weight entries', () => {
     expect(new Set(pickEntries([{ id: 1, weight: 0, missRate: 1 }, { id: 2, weight: 1, missRate: 0 }], 20))).toEqual(new Set([2]));
+  });
+});
+
+describe('holidays', () => {
+  it('knows Thanksgiving and Christmas', async () => {
+    const { isHoliday } = await import('../src/server/badges.ts');
+    expect(['2026-11-26', '2025-11-27', '2024-11-28', '2026-12-25'].every(isHoliday)).toBe(true);
+    expect(['2026-11-19', '2026-12-24', '2026-07-04'].some(isHoliday)).toBe(false);
   });
 });

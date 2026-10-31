@@ -3,7 +3,7 @@ import { kvSet, type DB } from '../db.ts';
 import type { Auth } from '../auth.ts';
 import { createKid, getKid, listKids, setCode, validGrade } from '../kids.ts';
 import { DEFAULT_GRADE, gradeSetList, seedBank } from '../seed.ts';
-import { DEFAULT_SETTINGS, getSettings, HttpError, quizReview, type Settings } from '../quiz.ts';
+import { challengeInfo, DEFAULT_SETTINGS, getSettings, HttpError, quizReview, type Settings } from '../quiz.ts';
 import { GENERATORS, buildQuestion, checkParams, generatorCatalog } from '../../shared/registry.ts';
 import { randomSeed } from '../../shared/rng.ts';
 import { isValidCode } from '../../shared/pictures.ts';
@@ -147,6 +147,8 @@ export function parentRoutes(app: FastifyInstance, db: DB, auth: Auth) {
         quizzes,
         entryStats,
         badges: db.prepare('SELECT code, earned_at FROM kid_badges WHERE kid_id = ? ORDER BY earned_at DESC').all(kid.id),
+        challenge: challengeInfo(db, kid),
+        purchases: db.prepare('SELECT item_id, bought_at FROM kid_items WHERE kid_id = ? ORDER BY bought_at DESC, item_id').all(kid.id),
       };
     });
 
@@ -161,15 +163,14 @@ export function parentRoutes(app: FastifyInstance, db: DB, auth: Auth) {
 
     p.get('/api/parent/generators', async () => generatorCatalog());
 
-    p.get('/api/parent/grade-sets', async () => gradeSetList());
+    p.get<{ Querystring: { kid?: string } }>('/api/parent/grade-sets', async (req) => gradeSetList(db, req.query.kid ? kidParam(req.query.kid).id : undefined));
 
     // Append a whole grade's question set to a child's bank.
     p.post<{ Body: { kidId?: number; grade?: number } }>('/api/parent/bank/grade-set', async (req) => {
       const kid = kidParam(req.body?.kidId);
       const grade = validGrade(req.body?.grade);
       if (!grade) throw new HttpError(400, 'Unknown grade');
-      seedBank(db, kid.id, grade);
-      return { ok: true };
+      return { ok: true, added: seedBank(db, kid.id, grade) };
     });
 
     p.post<{ Body: { generator: string; params: unknown } }>('/api/parent/preview', async (req) => {
@@ -232,6 +233,7 @@ export function parentRoutes(app: FastifyInstance, db: DB, auth: Auth) {
         quizLength: Math.min(30, Math.max(3, Math.round(Number(b.quizLength ?? DEFAULT_SETTINGS.quizLength)) || DEFAULT_SETTINGS.quizLength)),
         allowRetry: b.allowRetry === undefined ? cur.allowRetry : !!b.allowRetry,
         seasons: Array.isArray(b.seasons) ? [...new Set(b.seasons.filter(isSeason))] : cur.seasons,
+        challenges: b.challenges === undefined ? cur.challenges : !!b.challenges,
       };
       kvSet(db, 'settings', next);
       return next;

@@ -23,6 +23,7 @@ export interface GradeSet {
   grade: number;
   label: string;
   count: number;
+  missing: number; // not in the chosen child's bank yet (all of them when no child is given)
 }
 
 interface ParentCtx {

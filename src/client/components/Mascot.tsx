@@ -30,6 +30,9 @@ const FURS: Record<string, Fur> = {
   'hfur-lilac': { main: '#b48cf2', inner: '#5b3d99', muzzle: '#f6efff', tip: '#f6efff' },
   'hfur-moonlight': { main: '#8a7fb0', inner: '#3b2f5c', muzzle: '#ece8fb', tip: '#ffd166' },
   'hfur-maple': { main: '#c8502a', inner: '#6b2410', muzzle: '#ffe8d6', tip: '#ffb347' },
+  'hfur-harvest': { main: '#d9a441', inner: '#7a4e12', muzzle: '#fff6df', tip: '#fff6df' },
+  'hfur-frost': { main: '#9fd3f2', inner: '#3d7fb0', muzzle: '#f2faff', tip: '#ffffff' },
+  'hfur-gingerbread': { main: '#b5713a', inner: '#ffffff', muzzle: '#e9b98a', tip: '#ffffff' }, // white "icing" ears and mane
   'hfur-galaxy': { main: 'galaxy', inner: '#1f1446', muzzle: '#e8e3ff', tip: '#ffd60a' },
 };
 
@@ -203,6 +206,31 @@ function Hat({ id }: { id: string }) {
           <ellipse cx="60" cy="37" rx="30" ry="5" fill="#1d1d2b" />
         </g>
       );
+    case 'hhat-pilgrim':
+      return (
+        <g>
+          <ellipse cx="60" cy="36" rx="27" ry="5" fill="#1d1d2b" />
+          <path d="M46 35 L49 8 L71 8 L74 35 z" fill="#2d2240" />
+          <path d="M47.3 24 L72.7 24 L73.4 30 L46.6 30 z" fill="#5c4a3a" />
+          <rect x="54.5" y="23" width="11" height="8" rx="1" fill="none" stroke="#ffd166" strokeWidth="2" />
+        </g>
+      );
+    case 'hhat-earmuffs':
+      return (
+        <g>
+          <path d="M30 50 Q30 22 60 22 Q90 22 90 50" fill="none" stroke="#9b5de5" strokeWidth="4.5" />
+          <circle cx="28" cy="52" r="8.5" fill="#fff" stroke="#e0d7f2" strokeWidth="2" />
+          <circle cx="92" cy="52" r="8.5" fill="#fff" stroke="#e0d7f2" strokeWidth="2" />
+        </g>
+      );
+    case 'hhat-santa':
+      return (
+        <g>
+          <path d="M38 34 Q42 6 64 6 Q84 8 92 30 L84 34 z" fill="#e63946" />
+          <circle cx="92" cy="32" r="5.5" fill="#fff" stroke="#e0d7f2" strokeWidth="1.5" />
+          <rect x="35" y="29" width="50" height="10" rx="5" fill="#fff" stroke="#e0d7f2" strokeWidth="1.5" />
+        </g>
+      );
     case 'hhat-leaves':
       return (
         <g>
@@ -300,6 +328,37 @@ function Extra({ id, neck }: { id: string; neck: number }) {
           <rect x="68" y="90" width="18" height="22" rx="3" fill="#e63946" />
           <ellipse cx="77" cy="91" rx="9" ry="2.5" fill="#6b3a1e" />
           <path d="M72 101 l5 -3 l5 3 l-5 5 z" fill="#fff" opacity=".85" />
+        </g>
+      );
+    case 'hextra-pie':
+      return (
+        <g>
+          <path d="M66 102 L90 102 L86 110 L70 110 z" fill="#c98a4b" />
+          <ellipse cx="78" cy="102" rx="12" ry="4" fill="#e07a22" />
+          <path d="M66 102 q3 -3 6 0 q3 -3 6 0 q3 -3 6 0 q3 -3 6 0" fill="none" stroke="#f0c27b" strokeWidth="2.5" strokeLinecap="round" />
+          <ellipse cx="78" cy="99" rx="4" ry="2" fill="#fff" />
+        </g>
+      );
+    case 'hextra-snowman':
+      return (
+        <g>
+          <circle cx="78" cy="106" r="8" fill="#fff" stroke="#c9dcea" strokeWidth="1.5" />
+          <circle cx="78" cy="94" r="6" fill="#fff" stroke="#c9dcea" strokeWidth="1.5" />
+          <g fill="#2d2240">
+            <circle cx="76" cy="93" r="0.9" /><circle cx="80" cy="93" r="0.9" />
+            <circle cx="78" cy="104" r="1" /><circle cx="78" cy="108" r="1" />
+            <rect x="74" y="85" width="8" height="4" /><rect x="72" y="88" width="12" height="1.6" />
+          </g>
+          <path d="M78 95 l4 1 l-4 1 z" fill="#ff8c1a" />
+        </g>
+      );
+    case 'hextra-present':
+      return (
+        <g>
+          <rect x="67" y="94" width="22" height="18" rx="2" fill="#2f9e5b" />
+          <rect x="76" y="94" width="4" height="18" fill="#e63946" />
+          <rect x="67" y="101" width="22" height="4" fill="#e63946" />
+          <path d="M78 94 q-8 -8 -9 -1 z M78 94 q8 -8 9 -1 z" fill="#e63946" />
         </g>
       );
     case 'hextra-medal':

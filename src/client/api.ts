@@ -32,6 +32,15 @@ export interface Me {
   avatar: import('../shared/rewards.ts').Avatar;
   seasons: import('../shared/rewards.ts').Season[]; // seasonal sets on sale in the Star Store
   badges: { code: string; earned_at: string }[];
+  challenge: ChallengeInfo;
+}
+
+/** Next-grade challenge questions: offered as challenge mode, and mixed in on their own at 90% mastery. */
+export interface ChallengeInfo {
+  available: boolean;
+  nextGrade: string | null;
+  mastery: { mastered: number; total: number; pct: number };
+  auto: boolean;
 }
 
 export interface KidSummary {

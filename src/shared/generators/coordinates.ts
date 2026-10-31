@@ -63,6 +63,7 @@ const presetsFor = (): GeneratorDef<PointParams>['presets'] => [
   { id: 'quarters-dec', label: 'Quarters as decimals (±5)', params: { range: 5, coordType: 'quarter', style: 'decimal', quadrants: [1, 2, 3, 4], bothNonInteger: false } },
   { id: 'quarters-frac', label: 'Quarters as fractions, both coords (±3)', params: { range: 3, coordType: 'quarter', style: 'fraction', quadrants: [1, 2, 3, 4], bothNonInteger: true } },
   { id: 'tenths', label: 'Tenths (±2)', params: { range: 2, coordType: 'tenth', style: 'decimal', quadrants: [1, 2, 3, 4], bothNonInteger: false } },
+  { id: 'q1-integers', label: 'Whole numbers, first quadrant (0–10)', params: { range: 10, coordType: 'integer', style: 'mixed', quadrants: [1], bothNonInteger: false } },
   { id: 'integers', label: 'Whole numbers, all quadrants (±10)', params: { range: 10, coordType: 'integer', style: 'mixed', quadrants: [1, 2, 3, 4], bothNonInteger: false } },
 ];
 

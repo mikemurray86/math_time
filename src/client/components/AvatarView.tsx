@@ -9,6 +9,9 @@ const BODY: Record<string, string> = {
   'color-galaxy': 'url(#galaxy)',
   'color-ghost': '#f4f1fb',
   'color-maple': '#d9572b',
+  'color-cranberry': '#b8324f',
+  'color-frost': '#bfe6ff',
+  'color-evergreen': '#2f9e5b',
 };
 
 export function AvatarView({ avatar, size = 120 }: { avatar: Avatar; size?: number }) {
@@ -45,6 +48,20 @@ export function AvatarView({ avatar, size = 120 }: { avatar: Avatar; size?: numb
         <g fill="#3b2f5c" stroke="#231a3a" strokeWidth="2" strokeLinejoin="round">
           <path d="M34 62 L4 40 L8 56 L0 66 L12 70 L8 84 L34 84 z" />
           <path d="M86 62 L116 40 L112 56 L120 66 L108 70 L112 84 L86 84 z" />
+        </g>
+      )}
+      {avatar.extra === 'extra-turkey' && (
+        <g>
+          {[-65, -43, -22, 0, 22, 43, 65].map((a, i) => (
+            <ellipse key={a} cx="60" cy="42" rx="11" ry="24" transform={`rotate(${a} 60 80)`} fill={['#c0392b', '#e67e22', '#f1c40f', '#8e5a2b', '#f1c40f', '#e67e22', '#c0392b'][i]} />
+          ))}
+        </g>
+      )}
+      {avatar.extra === 'extra-snowflakes' && (
+        <g stroke="#6cb8e6" strokeWidth="2" strokeLinecap="round">
+          {[[14, 30, 7], [104, 24, 6], [10, 86, 5], [108, 90, 7], [30, 12, 4], [92, 108, 4]].map(([x, y, r]) => (
+            <path key={x} d={`M${x - r} ${y} h${2 * r} M${x - r / 2} ${y - r * 0.87} l${r} ${r * 1.73} M${x + r / 2} ${y - r * 0.87} l${-r} ${r * 1.73}`} />
+          ))}
         </g>
       )}
       {avatar.extra === 'extra-backpack' && <rect x="16" y="64" width="88" height="40" rx="14" fill="#ff9f1c" />}
@@ -90,6 +107,20 @@ export function AvatarView({ avatar, size = 120 }: { avatar: Avatar; size?: numb
           <path d="M53 89 l2 7 l2 -6 z" /><path d="M63 90 l2 6 l2 -7 z" />
         </g>
       )}
+      {avatar.face === 'face-rudolph' && (
+        <g>
+          <circle cx="60" cy="79" r="6" fill="#e63946" />
+          <circle cx="58" cy="77" r="1.8" fill="#fff" opacity=".7" />
+        </g>
+      )}
+      {avatar.extra === 'extra-lights' && (
+        <g>
+          <path d="M24 88 Q60 106 96 88" fill="none" stroke="#2d6a3e" strokeWidth="2" />
+          {([[30, 91, '#e63946'], [42, 95, '#ffd166'], [54, 97, '#4cc9f0'], [66, 97, '#e63946'], [78, 95, '#7bd389'], [90, 91, '#ffd166']] as const).map(([x, y, c]) => (
+            <ellipse key={x} cx={x} cy={y + 4} rx="3" ry="4.5" fill={c} />
+          ))}
+        </g>
+      )}
       {avatar.extra === 'extra-scarf' && (
         <g>
           <path d="M28 98 Q60 112 92 98 L88 108 Q60 121 32 108 z" fill="#c8502a" />
@@ -129,6 +160,42 @@ export function AvatarView({ avatar, size = 120 }: { avatar: Avatar; size?: numb
           <rect x="34" y="38" width="52" height="7" fill="#9b5de5" />
           <ellipse cx="60" cy="47" rx="40" ry="7" fill="#1d1d2b" />
           <rect x="54" y="37" width="10" height="9" rx="1" fill="none" stroke="#ffd166" strokeWidth="2" />
+        </g>
+      )}
+      {avatar.hat === 'hat-pilgrim' && (
+        <g>
+          <ellipse cx="60" cy="47" rx="34" ry="6" fill="#1d1d2b" />
+          <path d="M42 46 L46 14 L74 14 L78 46 z" fill="#2d2240" />
+          <path d="M43.5 34 L76.5 34 L77.4 41 L42.6 41 z" fill="#5c4a3a" />
+          <rect x="53" y="33" width="14" height="9" rx="1" fill="none" stroke="#ffd166" strokeWidth="2.5" />
+        </g>
+      )}
+      {avatar.hat === 'hat-pompom' && (
+        <g>
+          <path d="M28 54 Q28 22 60 22 Q92 22 92 54 z" fill="#3a86d4" />
+          <path d="M36 34 h48 M31 44 h58" stroke="#fff" strokeWidth="3" strokeDasharray="4 3" opacity=".8" />
+          <rect x="25" y="48" width="70" height="10" rx="5" fill="#2a6bb0" />
+          <circle cx="60" cy="19" r="8" fill="#fff" />
+        </g>
+      )}
+      {avatar.hat === 'hat-earmuffs' && (
+        <g>
+          <path d="M24 72 Q24 30 60 30 Q96 30 96 72" fill="none" stroke="#9b5de5" strokeWidth="5" />
+          <circle cx="22" cy="74" r="10" fill="#fff" stroke="#e0d7f2" strokeWidth="2" />
+          <circle cx="98" cy="74" r="10" fill="#fff" stroke="#e0d7f2" strokeWidth="2" />
+        </g>
+      )}
+      {avatar.hat === 'hat-santa' && (
+        <g>
+          <path d="M30 50 Q36 16 66 18 Q90 22 100 46 L92 50 z" fill="#e63946" />
+          <circle cx="100" cy="48" r="7" fill="#fff" stroke="#e0d7f2" strokeWidth="1.5" />
+          <rect x="26" y="44" width="68" height="12" rx="6" fill="#fff" stroke="#e0d7f2" strokeWidth="1.5" />
+        </g>
+      )}
+      {avatar.hat === 'hat-antlers' && (
+        <g fill="none" stroke="#8a5a2b" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M44 42 L34 14 M38 26 L26 22 M36 18 L42 8" />
+          <path d="M76 42 L86 14 M82 26 L94 22 M84 18 L78 8" />
         </g>
       )}
       {avatar.hat === 'hat-acorn' && (

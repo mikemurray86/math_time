@@ -13,7 +13,13 @@ A mobile-friendly math practice site for a 6th grader. A parent picks problem te
 Problem types, grouped into grade-level sets (`GRADE_SETS` in `src/server/seed.ts`). A new child's bank starts from their grade's set, and a parent can add another grade's set from the Bank page.
 
 - **4th grade:** multi-digit multiplication, long division with remainders, place value and rounding, equivalent fractions, adding and subtracting with like denominators, whole number × fraction, decimals ↔ fractions, comparing positive fractions and decimals, rectangle area and perimeter, and factors, multiples and primes.
-- **6th grade:** ordering and comparing numbers (negatives, fractions, decimals, `|x|`), plotting and reading coordinates (whole, ½, ¼, ⅓ or 0.1 steps), distance on a grid, and absolute-value expressions.
+- **5th grade:** multiplying by 2-digit numbers, long division with 2-digit divisors, adding, subtracting, multiplying and dividing decimals, powers of 10 and rounding decimals, adding and subtracting fractions with unlike denominators (including mixed numbers), multiplying fractions, dividing unit fractions and whole numbers, order of operations, volume of a box, and first-quadrant coordinates.
+- **6th grade:** ordering and comparing numbers (negatives, fractions, decimals, `|x|`), plotting and reading coordinates (whole, ½, ¼, ⅓ or 0.1 steps), distance on a grid, absolute-value expressions, dividing fractions, multi-digit decimals, GCF and LCM, ratios and unit rates, percents, order of operations with exponents, evaluating expressions, one-step equations, area of triangles, parallelograms and trapezoids, volume with fractional edges, and mean, median, mode and range.
+- **7th grade:** operations with negative integers, fractions and decimals, proportions and percent problems (discounts, tax, tips, percent change, simple interest), simplifying expressions, two-step equations and inequalities, area and circumference of circles, angle relationships, and probability.
+
+Adding a grade set to an existing bank skips the question types the child already has.
+
+**Challenge questions:** a child can pick *challenge mode* on the home screen to add 2 questions from the next grade to a quiz. Once they've mastered 90% of their bank (8 of the last 10 right on the first try, for each question type), about 1 in 5 quiz questions comes from the next grade on its own. Challenge questions aren't added to the bank, and a parent can switch them off in Settings.
 
 ### Your own questions (no code)
 
