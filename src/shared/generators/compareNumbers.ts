@@ -33,23 +33,28 @@ export const compareNumbers: GeneratorDef<CompareParams> = {
     const forms = p.forms.length ? p.forms : (['integer'] as NumberForm[]);
     const lo = p.positiveOnly ? 0 : -p.range;
     const left = makeNumber(rng, rng.pick(forms), lo, p.range, p.maxDen);
-    let right: Expr;
     const lv = exprValue(left);
+    // Same value, different look: 3/2 vs 1.5, |−2| vs 2, etc.
+    let right: Expr | null = null;
     if (p.allowEqual && rng.bool(0.2)) {
-      // Same value, different look: 3/2 vs 1.5, |−2| vs 2, etc.
       if (lv.isInt()) {
-        right = lv.sign() >= 0
-          ? { t: 'abs', e: { t: 'int', v: -lv.n } } // 3 = |−3|
-          : { t: 'neg', e: { t: 'abs', e: { t: 'int', v: lv.n } } }; // −3 = −|−3|
+        // Absolute values bring in negatives, so positive-only gets two different numbers instead.
+        if (!p.positiveOnly) {
+          right = lv.sign() >= 0
+            ? { t: 'abs', e: { t: 'int', v: -lv.n } } // 3 = |−3|
+            : { t: 'neg', e: { t: 'abs', e: { t: 'int', v: lv.n } } }; // −3 = −|−3|
+        }
       } else {
         const looks = (['fraction', 'mixed', 'decimal'] as const)
           .map((s) => toExpr(lv, s))
           .filter((e) => JSON.stringify(e) !== JSON.stringify(left))
           // younger grades only use tenths and hundredths as decimals
           .filter((e) => !(p.positiveOnly && e.t === 'dec' && 100 % lv.d !== 0));
-        right = looks.length ? rng.pick(looks) : { t: 'abs', e: toExpr(lv.neg()) };
+        if (looks.length) right = rng.pick(looks);
+        else if (!p.positiveOnly) right = { t: 'abs', e: toExpr(lv.neg()) };
       }
-    } else {
+    }
+    if (!right) {
       do right = makeNumber(rng, rng.pick(forms), lo, p.range, p.maxDen);
       while (exprValue(right).eq(lv));
     }

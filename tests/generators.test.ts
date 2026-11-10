@@ -205,6 +205,8 @@ describe('4th grade constraints', () => {
       if (q.input.kind !== 'choice') throw new Error();
       expect(exprValue(q.input.left!).sign()).toBeGreaterThanOrEqual(0);
       expect(exprValue(q.input.right!).sign()).toBeGreaterThanOrEqual(0);
+      // not even written inside an absolute value, like |−1/3|
+      expect(JSON.stringify([q.input, q.answerText, q.explanation])).not.toMatch(/"neg":true|"v":-|"t":"neg"|"t":"abs"/);
     }
   });
 
