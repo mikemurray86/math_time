@@ -8,7 +8,7 @@ import { fmtDuration, fmtWhen, level, pct } from './format.ts';
 import { useParent } from './ParentLayout.tsx';
 
 interface Dash {
-  quizzes: { id: number; finished_at: string; local_date: string; score: number; total: number; stars_earned: number; time_ms: number | null }[];
+  quizzes: { id: number; finished_at: string; local_date: string; score: number; total: number; stars_earned: number; time_ms: number | null; mode: 'quiz' | 'time'; time_limit_s: number | null }[];
   entryStats: { id: number; label: string; skill: string; enabled: number; attempts: number; first_right: number | null; final_right: number | null; avg_ms: number | null }[];
   kid: { id: number; name: string; stars: number; streak: number; bestStreak: number; avatar: Avatar };
   badges: { code: string; earned_at: string }[];
@@ -194,7 +194,7 @@ export function Dashboard() {
                 const p = pct(q.score, q.total);
                 return (
                   <tr key={q.id}>
-                    <td>{fmtWhen(q.finished_at)}</td>
+                    <td>{fmtWhen(q.finished_at)}{q.mode === 'time' && <><br /><small className="muted">⏱️ Time Attack · {(q.time_limit_s ?? 0) / 60} min</small></>}</td>
                     <td className={`lvl-${level(p)}`}>{q.score}/{q.total} ({p}%)</td>
                     <td>⭐ {q.stars_earned}</td>
                     <td>{fmtDuration(q.time_ms)}</td>

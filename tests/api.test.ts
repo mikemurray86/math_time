@@ -262,6 +262,59 @@ describe('kid flow', () => {
     expect(review.questions.find((q: { id: number }) => q.id === hard[0].id).label).toMatch(/^🚀 Challenge · 7th grade: /);
   });
 
+  it('runs a Time Attack: one try each, a server-side clock, high scores and badges', async () => {
+    const me = () => app.inject({ url: '/api/me', headers: { cookie: kidCookie } }).then((r) => r.json());
+    expect((await post('/api/time-attack', { minutes: 7 })).statusCode).toBe(400);
+
+    // Answers `right` questions correctly and `wrong` incorrectly, then lets the clock run out.
+    const play = async (minutes: number, right: number, wrong: number, localDate = '2026-11-02') => {
+      const ta = (await post('/api/time-attack', { minutes })).json();
+      expect(ta).toMatchObject({ minutes });
+      expect(ta.remainingMs).toBeGreaterThan(minutes * 60_000 - 5000);
+      expect(JSON.stringify(ta)).not.toMatch(/"answer"|explanation|hint/);
+      let q = ta.question;
+      for (let i = 0; i < right + wrong; i++) {
+        const r = (await post(`/api/quiz/${ta.quizId}/answer`, { questionId: q.id, response: i < right ? rightResponse(answerFor(q.id)) : null, timeMs: 3000 })).json();
+        expect(r.final).toBe(true); // no second tries
+        expect(r.correct).toBe(i < right);
+        if (!r.correct) expect(r.answerText).toBeTruthy();
+        expect(r.next.id).not.toBe(q.id);
+        q = r.next;
+      }
+      db.prepare('UPDATE quizzes SET ends_at = ? WHERE id = ?').run(Date.now() - 10_000, ta.quizId);
+      // too late, even with the grace period
+      expect((await post(`/api/quiz/${ta.quizId}/answer`, { questionId: q.id, response: rightResponse(answerFor(q.id)) })).statusCode).toBe(409);
+      return { quizId: ta.quizId, fin: (await post(`/api/quiz/${ta.quizId}/finish`, { localDate })).json() };
+    };
+
+    const first = await play(30, 3, 0);
+    // the question left on screen at the buzzer doesn't count; 3 for 3 isn't a "perfect quiz"
+    expect(first.fin).toMatchObject({ score: 3, total: 3, stars: 6, timeAttack: { minutes: 30, best: null, newBest: true } });
+    expect(first.fin.newBadges).toEqual(expect.arrayContaining(['first_quiz', 'time_first']));
+    expect(first.fin.newBadges).not.toContain('perfect');
+    expect(first.fin.newBadges).not.toContain('time_record'); // nothing to beat yet
+    expect(db.prepare('SELECT COUNT(*) AS n FROM quiz_questions WHERE quiz_id = ?').get(first.quizId)!.n).toBe(3);
+
+    const second = await play(30, 10, 1);
+    expect(second.fin).toMatchObject({ score: 10, total: 11, timeAttack: { best: 3, newBest: true } });
+    expect(second.fin.newBadges).toEqual(expect.arrayContaining(['time_10', 'time_record']));
+    // finishing twice changes nothing
+    expect((await post(`/api/quiz/${second.quizId}/finish`, {})).json()).toMatchObject({ score: 10, newBadges: [], timeAttack: { best: 3, newBest: true } });
+
+    // a lower score, and a different length, keep their own high scores
+    expect((await play(30, 2, 0)).fin.timeAttack).toEqual({ minutes: 30, best: 10, newBest: false });
+    expect((await play(5, 1, 0)).fin.timeAttack).toEqual({ minutes: 5, best: null, newBest: true });
+    expect((await me()).timeAttackBests).toEqual({ 30: { score: 10, date: '2026-11-02' }, 5: { score: 1, date: '2026-11-02' } });
+
+    const sharp = await play(60, 20, 2);
+    expect(sharp.fin.newBadges).toEqual(expect.arrayContaining(['time_sharp', 'time_hour']));
+
+    // parents see which quizzes were Time Attacks
+    const cookie = await login();
+    const dash = (await app.inject({ url: `/api/parent/dashboard?kid=${kidId}`, headers: { cookie } })).json();
+    expect(dash.quizzes[0]).toMatchObject({ mode: 'time', time_limit_s: 3600, score: 20, total: 22 });
+  });
+
   it('mixes in next-grade questions on its own once 90% of the bank is mastered', async () => {
     const me = () => app.inject({ url: '/api/me', headers: { cookie: kidCookie } }).then((r) => r.json());
     // 8 of the last 10 right on the first try for every question type

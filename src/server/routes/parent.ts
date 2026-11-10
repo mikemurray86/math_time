@@ -123,7 +123,7 @@ export function parentRoutes(app: FastifyInstance, db: DB, auth: Auth) {
       const kid = kidParam(req.query.kid);
       const quizzes = db
         .prepare(
-          `SELECT z.id, z.started_at, z.finished_at, z.local_date, z.score, z.total, z.stars_earned,
+          `SELECT z.id, z.started_at, z.finished_at, z.local_date, z.score, z.total, z.stars_earned, z.mode, z.time_limit_s,
                   (SELECT SUM(time_ms) FROM quiz_questions q WHERE q.quiz_id = z.id) AS time_ms
            FROM quizzes z WHERE z.kid_id = ? AND z.finished_at IS NOT NULL ORDER BY z.finished_at DESC LIMIT 100`,
         )

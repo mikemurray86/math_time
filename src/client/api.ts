@@ -33,6 +33,7 @@ export interface Me {
   seasons: import('../shared/rewards.ts').Season[]; // seasonal sets on sale in the Star Store
   badges: { code: string; earned_at: string }[];
   challenge: ChallengeInfo;
+  timeAttackBests: Record<number, { score: number; date: string | null }>; // keyed by minutes
 }
 
 /** Next-grade challenge questions: offered as challenge mode, and mixed in on their own at 90% mastery. */

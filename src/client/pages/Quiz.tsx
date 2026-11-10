@@ -37,6 +37,7 @@ export interface QuizResult {
   newBadges: string[];
   streak: number;
   totalStars: number;
+  timeAttack?: { minutes: number; best: number | null; newBest: boolean }; // best: the high score before this one
 }
 
 const PRAISE = ['Awesome!', 'You nailed it!', 'Math wizard! 🧙', 'Boom! Correct!', 'Fantastic!', 'Super smart!', 'Yes! Way to go!', 'Brilliant!'];

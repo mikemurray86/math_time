@@ -6,6 +6,7 @@ import { Home } from './pages/Home.tsx';
 import { Who } from './pages/Who.tsx';
 import { Kids } from './pages/parent/Kids.tsx';
 import { Quiz } from './pages/Quiz.tsx';
+import { TimeAttack } from './pages/TimeAttack.tsx';
 import { Results } from './pages/Results.tsx';
 import { AvatarPage } from './pages/AvatarPage.tsx';
 import { ParentLayout } from './pages/parent/ParentLayout.tsx';
@@ -23,6 +24,7 @@ export function App() {
         <Route path="/" element={<Home />} />
         <Route path="/who" element={<Who />} />
         <Route path="/quiz" element={<Quiz />} />
+        <Route path="/time-attack" element={<TimeAttack />} />
         <Route path="/results" element={<Results />} />
         <Route path="/avatar" element={<AvatarPage />} />
         <Route path="/parent" element={<ParentLayout />}>

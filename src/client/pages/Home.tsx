@@ -6,6 +6,8 @@ import { AvatarView } from '../components/AvatarView.tsx';
 import { MascotSays } from '../components/Mascot.tsx';
 import { BADGES, helperName } from '../../shared/rewards.ts';
 import { SoundToggle } from '../components/SoundToggle.tsx';
+import { TIME_ATTACK_DEFAULT, TIME_ATTACK_MINUTES } from '../../shared/timeAttack.ts';
+import { load, save } from '../storage.ts';
 
 const GREETINGS = ['Ready to crush some math?', 'Let’s train that brain!', 'Math time is the best time!', 'I believe in you!'];
 
@@ -14,6 +16,11 @@ export function Home() {
   const [me] = useMe();
   const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
   const [challenge, setChallenge] = useState(false);
+  const [minutes, setMinutes] = useState(() => {
+    const m = load<number>('mt-ta-minutes', TIME_ATTACK_DEFAULT);
+    return TIME_ATTACK_MINUTES.includes(m) ? m : TIME_ATTACK_DEFAULT;
+  });
+  const best = me?.timeAttackBests[minutes];
   const switchKid = async () => {
     await api('POST', '/api/kid/logout');
     navigate('/who');
@@ -59,6 +66,35 @@ export function Home() {
           {me.challenge.auto && <p className="muted">🎓 You’ve mastered {me.challenge.mastery.pct}% of your questions, so {me.challenge.nextGrade} questions will pop up in every quiz!</p>}
         </div>
       )}
+      <section className="card time-attack-card">
+        <h2>⏱️ Time Attack</h2>
+        <p className="muted">How many can you get right before the clock runs out? One try per question.</p>
+        <div className="ta-pick">
+          <label>
+            <span>Time</span>
+            <select
+              value={minutes}
+              onChange={(e) => {
+                const m = Number(e.target.value);
+                setMinutes(m);
+                save('mt-ta-minutes', m);
+              }}
+            >
+              {TIME_ATTACK_MINUTES.map((m) => <option key={m} value={m}>{m} minute{m === 1 ? '' : 's'}</option>)}
+            </select>
+          </label>
+          <span className="ta-best">🏆 High score: <strong>{best ? best.score : '–'}</strong></span>
+        </div>
+        <Link to={`/time-attack?min=${minutes}`} className="btn btn-big ta-start">Start the clock ⏱️</Link>
+        {me && Object.keys(me.timeAttackBests).length > 1 && (
+          <ul className="ta-bests">
+            {TIME_ATTACK_MINUTES.filter((m) => me.timeAttackBests[m]).map((m) => (
+              <li key={m}><span>{m} min</span><strong>{me.timeAttackBests[m].score}</strong></li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <Link to="/avatar" className="btn btn-big store-btn">⭐ Star Store <small>dress up you &amp; {me ? helperName(me.avatar) : 'your helper'}</small></Link>
 
       <section className="card">

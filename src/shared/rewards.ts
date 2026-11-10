@@ -55,6 +55,16 @@ export const BADGES: Badge[] = [
   // speed
   { code: 'lightning', name: 'Lightning', emoji: '⚡', description: 'Get a perfect quiz averaging under 20 seconds a question' },
   { code: 'personal_best', name: 'Personal Best', emoji: '⏱️', description: 'Beat your fastest perfect quiz' },
+  // Time Attack
+  { code: 'time_first', name: 'Beat the Clock', emoji: '⏰', description: 'Finish your first Time Attack' },
+  { code: 'time_10', name: 'Quick Ten', emoji: '🏎️', description: 'Get 10 right in one Time Attack' },
+  { code: 'time_25', name: 'Rapid Fire', emoji: '🎆', description: 'Get 25 right in one Time Attack' },
+  { code: 'time_50', name: 'Turbo Brain', emoji: '🧠', description: 'Get 50 right in one Time Attack' },
+  { code: 'time_100', name: 'Hyper Speed', emoji: '🌠', description: 'Get 100 right in one Time Attack' },
+  { code: 'time_record', name: 'Record Breaker', emoji: '📈', description: 'Beat your Time Attack high score' },
+  { code: 'time_sharp', name: 'Sharp & Speedy', emoji: '✨', description: 'Answer 20 or more in a Time Attack with 90% right' },
+  { code: 'time_hour', name: 'Iron Mind', emoji: '🦾', description: 'Finish a 60-minute Time Attack' },
+  { code: 'time_500', name: 'Clockwork', emoji: '🕰️', description: 'Get 500 Time Attack answers right in all' },
   // Star Store
   { code: 'fashionista', name: 'Fashionista', emoji: '👗', description: 'Own 15 things from the Star Store' },
   { code: 'holiday_collector', name: 'Holiday Collector', emoji: '🎁', description: 'Collect every item in a holiday set' },

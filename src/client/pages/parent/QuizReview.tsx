@@ -5,7 +5,7 @@ import { ReviewCard, type ReviewQ } from '../../components/ReviewCard.tsx';
 import { fmtDuration, fmtWhen } from './format.ts';
 
 interface Review {
-  quiz: { id: number; finished_at: string | null; score: number | null; total: number; stars_earned: number };
+  quiz: { id: number; finished_at: string | null; score: number | null; total: number; stars_earned: number; mode: 'quiz' | 'time'; time_limit_s: number | null };
   kid: { name: string } | null;
   questions: ReviewQ[];
 }
@@ -24,7 +24,8 @@ export function QuizReview() {
   return (
     <div className="parent-body">
       <Link to="/parent">← Dashboard</Link>
-      <h1>{kid ? `${kid.name}’s quiz` : 'Quiz review'}</h1>
+      <h1>{kid ? `${kid.name}’s ${quiz.mode === 'time' ? 'Time Attack' : 'quiz'}` : 'Quiz review'}</h1>
+      {quiz.mode === 'time' && <p className="muted">⏱️ {(quiz.time_limit_s ?? 0) / 60}-minute Time Attack: one try per question, against the clock.</p>}
       <p className="muted">
         {quiz.finished_at ? fmtWhen(quiz.finished_at) : 'Not finished'} · {quiz.score ?? 0}/{quiz.total} on the first try · ⭐ {quiz.stars_earned} ·{' '}
         {fmtDuration(questions.reduce((s, q) => s + (q.timeMs ?? 0), 0))}

@@ -634,3 +634,68 @@ body.crazy-shake .page { animation: crazy-shake 0.6s; }
 .challenge-toggle input { width: 22px; height: 22px; accent-color: #e08a00; flex: none; }
 .challenge-toggle.on { border-style: solid; background: #ffe7a8; box-shadow: 0 0 0 3px rgba(240, 180, 41, 0.35); }
 .challenge-ribbon { display: inline-block; margin-bottom: 8px; padding: 4px 10px; border-radius: 999px; background: linear-gradient(90deg, #ffb703, #fb8500); color: #fff; font-weight: 800; font-size: 0.85rem; }
+
+/* ---- Time Attack ---- */
+.time-attack-card h2 { margin-bottom: 4px; }
+.time-attack-card > p { margin: 0 0 10px; }
+.ta-pick { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.ta-pick label { display: flex; align-items: center; gap: 8px; font-weight: 800; }
+.ta-pick select { font: inherit; font-weight: 800; padding: 8px 12px; border-radius: 12px; border: 2px solid var(--line); background: #fff; min-height: 44px; }
+.ta-best { font-weight: 700; }
+.ta-start { width: 100%; background: var(--coral); color: #fff; border-color: var(--coral); box-shadow: 0 4px 0 #d95c3d; }
+.ta-bests { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 12px 0 0; }
+.ta-bests li { display: flex; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--amber-soft); font-size: 0.85rem; }
+.ta-clock { font-weight: 900; font-size: 1.15rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ta-clock.hurry { color: var(--coral); animation: pulse 0.8s ease-in-out infinite; }
+.ta-bar .progress-fill { transition: width 0.25s linear; }
+.ta-record { font-weight: 900; font-size: 1.3rem; color: var(--sun-dark); margin-bottom: 8px; animation: pulse 1.2s ease-in-out infinite; }
+
+/* ---- Mic drop (perfect score). One 3.8s timeline; the mic lands at 1.75s (46%). ---- */
+.mic-drop { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; overflow: hidden; cursor: pointer; background: radial-gradient(ellipse at 50% 45%, rgba(45, 34, 64, 0.82), rgba(12, 8, 28, 0.95)); animation: mic-in 3.8s ease both, mic-shake 0.35s 1.75s; }
+.mic-spot { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 34% 48% at 50% 58%, rgba(255, 240, 190, 0.42), rgba(255, 240, 190, 0.08) 60%, transparent 75%); }
+.mic-title { position: relative; font-size: clamp(2.2rem, 11vw, 3.6rem); font-weight: 900; letter-spacing: 0.04em; color: var(--sun); text-shadow: 0 4px 0 var(--sun-dark), 0 0 24px rgba(255, 201, 60, 0.6); animation: mic-title 3.8s ease both; }
+.mic-stage { position: relative; width: 240px; height: 230px; max-width: 100%; }
+.mic-helper { position: absolute; left: 14px; bottom: 18px; width: 150px; height: 150px; transform-origin: 50% 100%; animation: mic-helper 3.8s ease both; }
+.mic-helper .pip { animation: none; }
+.mic-shades { position: absolute; inset: 0; animation: mic-shades 3.8s ease both; }
+.mic-paw { position: absolute; left: 146px; bottom: 98px; transform-origin: 0 50%; animation: mic-paw 3.8s ease both; }
+.mic-fall { position: absolute; left: 151px; bottom: 112px; width: 30px; height: 80px; transform-origin: 50% 50%; animation: mic-fall 3.8s both; }
+.mic-floor { position: absolute; left: -30px; right: -30px; bottom: 12px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, transparent, rgba(255, 240, 190, 0.55), transparent); }
+.mic-boom { position: absolute; left: 146px; bottom: 74px; font-size: 2.2rem; font-weight: 900; color: #fff; text-shadow: 0 0 12px rgba(255, 122, 89, 0.9), 0 3px 0 var(--coral); transform-origin: 50% 100%; animation: mic-boom 3.8s ease both; }
+.mic-dust { position: absolute; bottom: 14px; width: 26px; height: 14px; border-radius: 50%; background: rgba(255, 244, 214, 0.8); animation: mic-dust 3.8s ease-out both; }
+.mic-dust-l { left: 126px; --dx: -34px; }
+.mic-dust-r { left: 180px; --dx: 34px; }
+.mic-caption { position: relative; font-size: 1.5rem; font-weight: 900; color: #fff; animation: mic-caption 3.8s ease both; }
+
+@keyframes mic-in { 0% { opacity: 0; } 6%, 90% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes mic-shake { 25% { transform: translate(-6px, 3px); } 50% { transform: translate(5px, -3px); } 75% { transform: translate(-3px, 2px); } }
+@keyframes mic-title { 0%, 6% { opacity: 0; transform: scale(0.3); } 12% { opacity: 1; transform: scale(1.15); } 16%, 88% { opacity: 1; transform: scale(1); } 100% { opacity: 0; } }
+@keyframes mic-helper {
+  0% { opacity: 0; transform: translateY(70px); }
+  13% { opacity: 1; transform: translateY(-6px); }
+  16%, 44% { transform: none; }
+  50% { transform: rotate(-5deg) scale(1.04, 0.97); } /* leans back, proud */
+  60%, 100% { transform: rotate(-3deg); }
+}
+@keyframes mic-shades { 0%, 15% { opacity: 0; transform: translateY(-90px); } 22% { opacity: 1; transform: translateY(3px); } 25%, 100% { opacity: 1; transform: none; } }
+@keyframes mic-paw {
+  0%, 10% { opacity: 0; transform: translateX(-20px); }
+  16% { opacity: 1; transform: none; }
+  30% { transform: rotate(-4deg); }
+  34% { transform: rotate(14deg); } /* lets go */
+  44% { opacity: 1; transform: rotate(10deg); }
+  58%, 100% { opacity: 0; transform: translate(-20px, 6px) rotate(10deg); }
+}
+@keyframes mic-fall {
+  0%, 10% { opacity: 0; transform: translateY(-20px); }
+  16% { opacity: 1; transform: none; }
+  24% { transform: rotate(-8deg); }
+  30% { transform: rotate(6deg); }
+  34% { transform: none; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); } /* drop! */
+  46% { transform: translateY(125px) rotate(100deg); }
+  49.5% { transform: translateY(110px) rotate(78deg); }
+  53%, 100% { transform: translateY(125px) rotate(90deg); }
+}
+@keyframes mic-boom { 0%, 45% { opacity: 0; transform: scale(0.2); } 49% { opacity: 1; transform: scale(1.35) rotate(-6deg); } 54%, 78% { opacity: 1; transform: scale(1) rotate(-6deg); } 86%, 100% { opacity: 0; transform: translateY(-14px) rotate(-6deg); } }
+@keyframes mic-dust { 0%, 45% { opacity: 0; transform: scale(0.3); } 48% { opacity: 1; } 64%, 100% { opacity: 0; transform: translateX(var(--dx)) translateY(-10px) scale(1.8); } }
+@keyframes mic-caption { 0%, 50% { opacity: 0; transform: translateY(12px); } 56%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }

@@ -3,7 +3,7 @@ import type { DB } from '../db.ts';
 import type { Auth } from '../auth.ts';
 import { buyItem, checkCode, getKid, listKids, ownedItems, owns, saveAvatar } from '../kids.ts';
 import { awardBadges, storeBadges } from '../badges.ts';
-import { answerQuestion, challengeInfo, createQuiz, finishQuiz, getSettings, HttpError, quizReview } from '../quiz.ts';
+import { answerQuestion, challengeInfo, createQuiz, createTimeAttack, finishQuiz, getSettings, HttpError, quizReview, timeAttackBests } from '../quiz.ts';
 import { AVATAR_ITEMS, type Avatar, type Slot } from '../../shared/rewards.ts';
 
 export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
@@ -44,6 +44,7 @@ export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
       avatar: kid.avatar,
       seasons: getSettings(db).seasons,
       challenge: challengeInfo(db, kid),
+      timeAttackBests: timeAttackBests(db, kid.id),
       badges: db.prepare('SELECT code, earned_at FROM kid_badges WHERE kid_id = ? ORDER BY earned_at').all(kid.id),
     };
   });
@@ -85,6 +86,9 @@ export function kidRoutes(app: FastifyInstance, db: DB, auth: Auth) {
   });
 
   app.post<{ Body: { challenge?: boolean } }>('/api/quiz', async (req) => createQuiz(db, currentKid(req).id, { challenge: req.body?.challenge === true }));
+
+  // Time Attack: one question at a time until the clock runs out; each answer brings the next one.
+  app.post<{ Body: { minutes?: number } }>('/api/time-attack', async (req) => createTimeAttack(db, currentKid(req).id, req.body?.minutes));
 
   app.post<{ Params: { id: string }; Body: { questionId: number; response: unknown; timeMs: number } }>('/api/quiz/:id/answer', async (req) =>
     answerQuestion(db, currentKid(req).id, Number(req.params.id), Number(req.body?.questionId), req.body?.response, req.body?.timeMs),

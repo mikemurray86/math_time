@@ -63,6 +63,16 @@ export const sounds = {
       slide(500, 2400, 2.7, 0.8, 'sine', 0.09); // and away
     }),
   tap: () => play(() => tone(880, 0, 0.06, 'sine', 0.06)),
+  /** Mic drop: a little feedback hum, a whoosh as it falls, then a big thud at `impact` seconds. */
+  micDrop: (impact: number) =>
+    play(() => {
+      [523.25, 659.25, 783.99].forEach((f, i) => tone(f, 0.25 + i * 0.1, 0.25, 'triangle', 0.1)); // ta-da
+      slide(1200, 250, impact - 0.45, 0.45, 'sine', 0.06); // falling
+      tone(55, impact, 0.7, 'sine', 0.5); // THUD
+      slide(180, 40, impact, 0.35, 'triangle', 0.3);
+      tone(110, impact + 0.18, 0.3, 'sine', 0.2); // bounce
+      slide(2600, 2900, impact + 0.05, 0.5, 'sine', 0.025); // speaker squeal
+    }),
   fanfare: () =>
     play(() => {
       [523.25, 523.25, 523.25, 698.46, 880, 1046.5].forEach((f, i) => tone(f, [0, 0.12, 0.24, 0.4, 0.6, 0.8][i], i === 5 ? 0.7 : 0.18));
